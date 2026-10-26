@@ -1,0 +1,3 @@
+icon-192.png	192px	816 bytes
+icon-512.png	512px	2513 bytes
+icon-maskable-512.png	512px	2493 bytes

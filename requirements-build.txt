@@ -1,0 +1,8 @@
+# 빌드 전용 의존성 (런타임 requirements.txt와 분리)
+# 설치형 배포본을 만들 때만 필요하다.
+#
+# 주의: PyInstaller/Pillow는 Python 버전별로 지원 범위가 다르다.
+# 아래 핀은 Python 3.14에서 동작하는 버전이다.
+# Python 3.11을 쓴다면 더 낮은 버전(예: pyinstaller==6.11.1)도 가능하다.
+pyinstaller==6.22.3
+pillow==12.3.0   # .ico 아이콘 생성용 (make_icon.py)

@@ -1,0 +1,127 @@
+/* Tetris PWA — 반응형 레이아웃 (모바일 세로 우선, 데스크톱 대응) */
+:root {
+  --bg: #0b0e1a;
+  --panel: #151a2e;
+  --panel2: #1e2440;
+  --grid: #222844;
+  --text: #e8ecff;
+  --muted: #8b93b8;
+  --accent: #5b8cff;
+  --accent2: #3a66d6;
+  --danger: #ff5b6e;
+  --ok: #38d39f;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Segoe UI", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+  overflow: hidden; touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+}
+#app { height: 100dvh; width: 100vw; position: relative; }
+
+/* 화면 전환 */
+.screen { display: none; position: absolute; inset: 0; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+.screen.active { display: flex; flex-direction: column; align-items: center; }
+.hidden { display: none !important; }
+
+/* 메뉴 */
+#menu { justify-content: center; gap: 10px; }
+.logo {
+  font-size: clamp(42px, 13vw, 92px); font-weight: 900; letter-spacing: 6px;
+  margin: 0; background: linear-gradient(90deg,#00f0f0,#5b8cff,#b05bff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ver { color: var(--muted); margin: 0 0 18px; }
+.menu-btns { display: flex; flex-direction: column; gap: 12px; width: min(78vw, 320px); }
+.hint { color: var(--muted); font-size: 13px; text-align: center; max-width: 80vw; margin-top: 18px; line-height: 1.5; }
+
+.mbtn {
+  font: inherit; font-size: 18px; font-weight: 700; padding: 15px 18px;
+  border: 1px solid var(--panel2); border-radius: 14px;
+  background: var(--panel); color: var(--text); cursor: pointer;
+  transition: transform .06s ease, background .15s ease;
+}
+.mbtn:active { transform: scale(.97); }
+.mbtn.primary { background: var(--accent2); border-color: var(--accent); }
+.mbtn.install { background: var(--ok); border-color: var(--ok); color: #04231a; width: min(78vw,320px); margin-top: 8px; }
+
+/* 게임 레이아웃 */
+#game.active { justify-content: space-between; }
+.game-wrap {
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 10px; width: 100%; padding: 8px 8px 0; flex: 1; min-height: 0;
+}
+.board {
+  background: #05070f; border: 2px solid var(--grid); border-radius: 6px;
+  display: block; height: 100%; max-height: 100%;
+}
+.side { display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+.side.left { align-items: flex-end; }
+.panel { background: var(--panel); border-radius: 10px; padding: 8px; }
+.panel-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; text-align: center; }
+.stats { display: flex; flex-direction: column; gap: 8px; min-width: 96px; }
+.stat { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); }
+.stat b { font-size: 20px; color: var(--text); }
+canvas#holdCanvas, canvas#nextCanvas { display: block; background: #05070f; border-radius: 6px; width: 96px; }
+.icon-btn {
+  font-size: 22px; background: var(--panel); border: 1px solid var(--panel2);
+  border-radius: 10px; color: var(--text); width: 52px; height: 52px; cursor: pointer;
+}
+.icon-btn:active { transform: scale(.95); }
+
+/* 터치 패드 */
+.touchpad { width: 100%; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+.touchpad .row { display: flex; gap: 8px; }
+.tbtn {
+  flex: 1; font: inherit; font-size: 20px; font-weight: 800; padding: 16px 0;
+  background: var(--panel2); border: 1px solid var(--grid); border-radius: 12px;
+  color: var(--text); cursor: pointer; min-height: 56px;
+}
+.tbtn:active { background: var(--accent2); }
+.tbtn.wide { flex: 2; font-size: 16px; }
+.tbtn.drop { background: var(--accent2); border-color: var(--accent); }
+
+/* 오버레이(일시정지·게임오버) */
+.overlay {
+  position: absolute; inset: 0; background: rgba(5,7,15,.82);
+  display: flex; align-items: center; justify-content: center; z-index: 10;
+  backdrop-filter: blur(3px);
+}
+.dialog {
+  background: var(--panel); border: 1px solid var(--panel2); border-radius: 18px;
+  padding: 24px; display: flex; flex-direction: column; gap: 12px;
+  width: min(84vw, 340px); text-align: center;
+}
+.dialog h2 { margin: 0 0 6px; }
+.dialog .final b { color: var(--accent); font-size: 28px; }
+.dialog input {
+  font: inherit; font-size: 18px; padding: 12px; text-align: center;
+  border-radius: 10px; border: 1px solid var(--panel2); background: var(--panel2); color: var(--text);
+}
+
+/* 랭킹 */
+#ranking.active, #settings.active { justify-content: flex-start; padding-top: calc(24px + env(safe-area-inset-top)); gap: 14px; }
+#ranking h2, #settings h2 { margin: 0; }
+.rank-list { list-style: none; padding: 0; width: min(88vw, 420px); display: flex; flex-direction: column; gap: 6px; }
+.rank-list li {
+  display: flex; justify-content: space-between; background: var(--panel);
+  padding: 12px 16px; border-radius: 10px; font-size: 16px;
+}
+.rank-list li .rk { color: var(--muted); width: 28px; }
+.rank-list li .nm { flex: 1; text-align: left; margin-left: 8px; }
+.rank-list li .sc { color: var(--accent); font-weight: 700; }
+.rank-list .empty { justify-content: center; color: var(--muted); }
+
+/* 설정 */
+.setting-row { display: flex; align-items: center; gap: 12px; width: min(88vw,420px); background: var(--panel); padding: 14px 16px; border-radius: 10px; }
+.setting-row label { flex: 1; }
+.toggle { font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--panel2); background: var(--panel2); color: var(--text); cursor: pointer; }
+.toggle[data-on="true"] { background: var(--ok); color: #04231a; border-color: var(--ok); }
+.setting-row input[type=range] { flex: 1; accent-color: var(--accent); }
+
+/* 가로/넓은 화면: 터치패드 숨김 축소, 보드 확대 */
+@media (min-width: 820px) and (orientation: landscape) {
+  .touchpad { max-width: 760px; }
+}
