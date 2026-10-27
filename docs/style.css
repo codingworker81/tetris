@@ -98,31 +98,30 @@ canvas#nextCanvas {
 .icon-btn svg { display: block; }
 .icon-btn:active { transform: scale(.92); color: var(--accent); border-color: var(--accent); }
 
-/* 보드 무대: 좌우 반투명 터치존 + 중앙 보드 */
+/* 보드 무대: [좌 터치존][보드][우 터치존] 가로 배치 — 터치존이 보드를 침범하지 않음 */
 .board-stage {
   position: relative; z-index: 1; width: 100%;
   flex: 1 1 auto; min-height: 0;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: stretch; justify-content: center; gap: 0;
 }
 .board {
   background: transparent;
   border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: 8px; display: block; max-height: 100%; max-width: 100%;
   box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);
+  flex: 0 0 auto; align-self: center;
 }
-/* 좌우 가장자리 터치존 */
+/* 좌우 터치존 — 보드 옆 고정폭 세로 영역(겹침 없음) */
 .edge-zone {
-  position: absolute; top: 0; bottom: 0; width: 22%; z-index: 2;
+  flex: 0 0 auto; width: 54px; z-index: 2;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 6px; border: 0; cursor: pointer; color: var(--muted);
   background: transparent; -webkit-tap-highlight-color: transparent;
 }
-.edge-left { left: 0; }
-.edge-right { right: 0; }
-.edge-zone:active { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-.edge-arrow { font-size: 42px; font-weight: 400; line-height: 1; opacity: .85;
+.edge-zone:active { background: color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 12px; }
+.edge-arrow { font-size: 34px; font-weight: 400; line-height: 1; opacity: .85;
   color: var(--accent); text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent); }
-.edge-label { font-size: 12px; letter-spacing: 2px; opacity: .75; color: var(--text); }
+.edge-label { font-size: 11px; letter-spacing: 1px; opacity: .7; color: var(--text); }
 
 /* 하단 조작: 회전 / 드랍 큰 버튼 + 보조 */
 .touchpad {

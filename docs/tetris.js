@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.19';
+const VERSION = '1.1.20';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -419,7 +419,9 @@ function resizeBoard() {
   const padH = (narrow && touchpad) ? touchpad.offsetHeight : 0;
   // 폭: 넓은 화면은 중앙 고정폭(720) 한도, 세로 폰은 창 폭 그대로.
   const frameW = narrow ? window.innerWidth : Math.min(window.innerWidth, 720);
-  const availW = frameW - 24;                                   // 좌우 여백
+  // 세로 폰은 보드 양옆에 터치존(각 54px)이 있으므로 그 폭을 빼야 보드가 터치존과 겹치지 않음.
+  const edgeW = narrow ? (54 * 2) : 0;
+  const availW = frameW - edgeW - 16;                           // 좌우 터치존 + 여백
   const availH = window.innerHeight - topH - padH - 20;         // 상단바+터치패드 제외한 세로
   const cellByH = Math.floor(availH / ROWS);
   const cellByW = Math.floor(availW / COLS);
