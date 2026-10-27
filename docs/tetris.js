@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.3';
+const VERSION = '1.1.4';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {

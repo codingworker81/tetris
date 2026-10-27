@@ -19,7 +19,7 @@
   <!-- 메인 메뉴 -->
   <section id="menu" class="screen active">
     <h1 class="logo">TETRIS</h1>
-    <p class="ver" id="verLabel">v1.1.3</p>
+    <p class="ver" id="verLabel">v1.1.4</p>
     <div class="menu-btns">
       <button class="mbtn primary" data-action="start">시작</button>
       <button class="mbtn" data-action="ranking">랭킹</button>
@@ -162,8 +162,28 @@
 <script src="tetris.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
+    let refreshing = false;
+    // 새 서비스워커가 제어권을 잡으면 한 번만 자동 새로고침 → 캐시 갱신이 바로 반영됨
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        // 주기적으로 업데이트 확인
+        reg.update();
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            // 새 버전 설치 완료 & 기존 컨트롤러 존재 → 즉시 활성화 요청
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              nw.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      }).catch(() => {});
     });
   }
 </script>
