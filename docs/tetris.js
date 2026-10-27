@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.5';
+const VERSION = '1.1.6';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -381,18 +381,23 @@ function resizeBoard() {
   if (!wrap || wrap.clientHeight === 0) return; // 레이아웃 미확정 시 스킵(rAF 재호출)
   const leftSide = document.querySelector('.side.left');
   const rightSide = document.querySelector('.side.right');
+  const touchpad = document.getElementById('touchpad');
   const stacked = window.innerWidth <= 620;
+
+  // 터치패드 표시/숨김을 JS에서 확정(CSS 캐시 의존 제거)
+  const touchSetting = (typeof STORE !== 'undefined' && STORE.settings && STORE.settings.touch === false) ? false : true;
+  if (touchpad) touchpad.style.display = (stacked && touchSetting) ? '' : 'none';
 
   let availW, availH;
   if (stacked) {
     // 세로 폰: 사이드가 보드 위/아래 가로줄 → 보드는 가로폭 거의 전부, 세로는 남은 높이
     const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
-    availW = wrap.clientWidth - 12;
+    availW = window.innerWidth - 12;
     availH = wrap.clientHeight - sideH - 18; // 사이드 2줄 + gap 여유
   } else {
-    // 넓은 화면: 사이드가 보드 옆 세로 배치 (터치패드는 CSS로 숨김)
+    // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 폭 기준으로 계산(보드 크기와 분리 → 악순환 방지)
     const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
-    availW = wrap.clientWidth - sideW - (10 * 2 + 16);
+    availW = window.innerWidth - sideW - (10 * 2 + 24);
     availH = wrap.clientHeight - 16;
   }
   const cellByH = Math.floor(availH / ROWS);
@@ -401,7 +406,7 @@ function resizeBoard() {
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
   const diag = document.getElementById('diag');
-  if (diag) diag.textContent = `v${VERSION} ${window.innerWidth}x${window.innerHeight} ${stacked ? 'stack' : 'side'} wrapH=${wrap.clientHeight} CELL=${CELL}`;
+  if (diag) diag.textContent = `v${VERSION} ${window.innerWidth}x${window.innerHeight} ${stacked ? 'stack' : 'side'} wrapH=${wrap.clientHeight} sideW=${(leftSide?leftSide.offsetWidth:0)+(rightSide?rightSide.offsetWidth:0)} CELL=${CELL}`;
 }
 
 function drawCell(ctx, x, y, color, size = CELL) {
