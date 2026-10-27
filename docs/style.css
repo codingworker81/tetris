@@ -100,8 +100,6 @@ canvas#holdCanvas, canvas#nextCanvas { display: block; background: rgba(5,7,15,.
   .stats { flex-direction: row; gap: 12px; min-width: 0; }
   .stat { font-size: 10px; }
   .stat b { font-size: 15px; }
-  canvas#holdCanvas { max-width: 44px; }
-  canvas#nextCanvas { width: auto; max-width: 120px; height: 42px; }
   .side-btns { flex-direction: row; gap: 8px; }
 }
 

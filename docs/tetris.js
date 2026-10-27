@@ -201,7 +201,7 @@ class Game {
 /* ===== 저장 (storage.py → localStorage) ===== */
 const STORE = {
   SCORES: 'tetris.scores', SETTINGS: 'tetris.settings', TOP_N: 10,
-  DEFAULTS: { sound: true, volume: 0.7, showTouch: true, bgm: true, bgmVolume: 0.4, haptics: true, swipe: true, scheme: 'midnight', subject: 'none', bgDim: 0.55 },
+  DEFAULTS: { sound: true, volume: 0.7, showTouch: true, bgm: true, bgmVolume: 0.4, haptics: true, swipe: true, scheme: 'midnight', subject: 'none', bgDim: 0.35 },
   loadScores() { try { const v = JSON.parse(localStorage.getItem(this.SCORES)); return Array.isArray(v) ? v : []; } catch { return []; } },
   saveScores(s) { localStorage.setItem(this.SCORES, JSON.stringify(s.slice(0, this.TOP_N))); },
   addScore(name, score) {
@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.8';
+const VERSION = '1.1.9';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -384,16 +384,18 @@ function resizeBoard() {
   const touchpad = document.getElementById('touchpad');
   const stacked = window.innerWidth <= 620;
 
-  // 터치패드 표시/숨김을 JS에서 확정(CSS 캐시 의존 제거)
-  const touchSetting = (typeof STORE !== 'undefined' && STORE.settings && STORE.settings.touch === false) ? false : true;
-  if (touchpad) touchpad.style.display = (stacked && touchSetting) ? '' : 'none';
+  // 터치패드 표시/숨김을 JS에서 확정(CSS 캐시 의존 제거). 설정 키는 showTouch.
+  const settings = (typeof STORE !== 'undefined' && STORE.loadSettings) ? STORE.loadSettings() : {};
+  const showTouch = settings.showTouch !== false;
+  if (touchpad) touchpad.style.display = (stacked && showTouch) ? '' : 'none';
 
   let availW, availH;
   if (stacked) {
-    // 세로 폰: 사이드가 보드 위/아래 가로줄 → 보드는 가로폭 거의 전부, 세로는 남은 높이
+    // 세로 폰: 사이드가 보드 위 가로줄 + 하단 터치패드 → 보드는 그 사이 남은 세로 공간
     const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
+    const padH = (touchpad && touchpad.style.display !== 'none') ? (touchpad.offsetHeight || 140) : 0;
     availW = window.innerWidth - 12;
-    availH = window.innerHeight - sideH - 24; // 창 높이 기준(flex 측정 오차 회피)
+    availH = window.innerHeight - sideH - padH - 24; // 상단 사이드 + 하단 터치패드 확보
   } else {
     // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 크기 기준으로 계산(보드 크기와 분리 → 악순환 방지)
     const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
@@ -405,6 +407,20 @@ function resizeBoard() {
   CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
+
+  // HOLD/NEXT 캔버스 크기를 레이아웃에 맞게 확정(CSS 의존 제거)
+  if (stacked) {
+    const u = Math.max(40, Math.min(64, Math.floor(window.innerWidth / 7)));
+    holdCanvas.width = u; holdCanvas.height = u;
+    holdCanvas.style.width = u + 'px'; holdCanvas.style.height = u + 'px';
+    nextCanvas.width = u * 3; nextCanvas.height = u;
+    nextCanvas.style.width = (u * 3) + 'px'; nextCanvas.style.height = u + 'px'; nextCanvas.style.maxWidth = 'none';
+  } else {
+    holdCanvas.width = 72; holdCanvas.height = 72;
+    holdCanvas.style.width = '72px'; holdCanvas.style.height = '72px';
+    nextCanvas.width = 72; nextCanvas.height = 216;
+    nextCanvas.style.width = '72px'; nextCanvas.style.height = '216px'; nextCanvas.style.maxWidth = 'none';
+  }
 }
 
 function drawCell(ctx, x, y, color, size = CELL) {
@@ -420,7 +436,7 @@ function render(game) {
   if (subjectOn) {
     // 배경 주제가 보이도록 보드를 반투명하게
     bctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
-    bctx.fillStyle = ThemeMgr.scheme === 'light' ? 'rgba(247,249,252,0.55)' : 'rgba(5,7,15,0.55)';
+    bctx.fillStyle = ThemeMgr.scheme === 'light' ? 'rgba(247,249,252,0.68)' : 'rgba(5,7,15,0.68)';
     bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
   } else {
     bctx.fillStyle = ThemeMgr.boardBg; bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
@@ -452,9 +468,27 @@ function render(game) {
   // HOLD
   hctx.fillStyle = ThemeMgr.boardBg; hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
   if (game.holdType) drawMini(hctx, game.holdType, holdCanvas.width, holdCanvas.height, 0);
-  // NEXT (3개)
+  // NEXT (3개) — 세로 폰은 가로 3칸, 넓은 화면은 세로 3칸
   nctx.fillStyle = ThemeMgr.boardBg; nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-  game.nextTypes(3).forEach((t, i) => drawMini(nctx, t, nextCanvas.width, 86, i * 86));
+  const nq = game.nextTypes(3);
+  if (window.innerWidth <= 620) {
+    const cw = nextCanvas.width / 3;
+    nq.forEach((t, i) => drawMiniBox(nctx, t, i * cw, 0, cw, nextCanvas.height));
+  } else {
+    const ch = nextCanvas.height / 3;
+    nq.forEach((t, i) => drawMiniBox(nctx, t, 0, i * ch, nextCanvas.width, ch));
+  }
+}
+
+// 지정한 박스(bx,by,bw,bh) 안에 미니 조각을 중앙 정렬해 그림
+function drawMiniBox(ctx, type, bx, by, bw, bh) {
+  const cells = cellsFor(type, 0);
+  const cols = cells.map(c => c[1]), rows = cells.map(c => c[0]);
+  const minC = Math.min(...cols), maxC = Math.max(...cols), minR = Math.min(...rows), maxR = Math.max(...rows);
+  const pw = maxC - minC + 1, ph = maxR - minR + 1;
+  const sz = Math.max(6, Math.floor(Math.min((bw - 10) / pw, (bh - 10) / ph)));
+  const ox = bx + (bw - pw * sz) / 2, oy = by + (bh - ph * sz) / 2;
+  for (const [r, c] of cells) drawCell(ctx, ox + (c - minC) * sz, oy + (r - minR) * sz, COLORS[type], sz);
 }
 
 function drawMini(ctx, type, w, h, yOff) {
@@ -651,8 +685,11 @@ document.body.addEventListener('click', (e) => {
 });
 el('pauseBtn').addEventListener('click', togglePause);
 el('soundBtn').addEventListener('click', () => {
-  Sound.settings.sound = !Sound.settings.sound; const s = STORE.loadSettings(); s.sound = Sound.settings.sound; STORE.saveSettings(s);
-  el('soundBtn').textContent = Sound.settings.sound ? '🔊' : '🔇';
+  const on = !Sound.settings.sound;           // 통합 소리 토글(효과음+BGM)
+  Sound.settings.sound = on; Sound.settings.bgm = on;
+  const s = STORE.loadSettings(); s.sound = on; s.bgm = on; STORE.saveSettings(s);
+  el('soundBtn').textContent = on ? '🔊' : '🔇';
+  BGM.refresh();                               // 무음이면 BGM 즉시 정지, 켜면 재생
 });
 
 /* ===== 설정 화면 ===== */
