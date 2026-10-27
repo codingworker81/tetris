@@ -49,16 +49,16 @@ html, body {
 
 /* ===== 게임 레이아웃 (네온 TETRIS 스타일) — 3구역 flex-column ===== */
 #game.active { justify-content: flex-start; }
-#game { position: relative; }
+#game { position: relative; background: var(--bg); }
 .bg-layer {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background-size: cover; background-position: center; opacity: 0;
   transition: opacity .3s ease;
 }
-/* 배경 가독성용 어둡게 덮기 (--bg-dim: 0~0.95) */
+/* 배경 가독성용 덮기 — 테마에 맞는 색(라이트=흰색, 미드나잇=검정) */
 .bg-layer::after {
   content: ''; position: absolute; inset: 0;
-  background: rgba(0,0,0,var(--bg-dim, 0.55));
+  background: rgba(var(--bg-dim-rgb, 0,0,0), var(--bg-dim, 0.55));
 }
 
 /* 상단 바: 좌 스탯 / 중앙 로고·아이콘 / 우 NEXT·HOLD */
@@ -90,14 +90,14 @@ canvas#holdCanvas, canvas#nextCanvas {
 }
 
 .icon-btn {
-  font-size: 16px;
-  background: color-mix(in srgb, var(--panel) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  border-radius: 10px; color: var(--text); width: 36px; height: 36px; cursor: pointer;
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  transition: transform .06s ease, background .12s ease;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 50%; color: var(--muted); width: 34px; height: 34px; cursor: pointer;
+  transition: transform .06s ease, background .12s ease, color .12s ease, border-color .12s ease;
 }
-.icon-btn:active { transform: scale(.95); background: var(--accent2); }
+.icon-btn svg { display: block; }
+.icon-btn:active { transform: scale(.92); color: var(--accent); border-color: var(--accent); }
 
 /* 보드 무대: 좌우 반투명 터치존 + 중앙 보드 */
 .board-stage {
@@ -128,24 +128,22 @@ canvas#holdCanvas, canvas#nextCanvas {
 /* 하단 조작: 회전 / 드랍 큰 버튼 + 보조 */
 .touchpad {
   position: relative; z-index: 3; width: 100%; flex: 0 0 auto;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+  padding: 4px 10px calc(6px + env(safe-area-inset-bottom));
 }
 .pad-main { display: flex; gap: 10px; }
 .pad-btn {
   flex: 1; font: inherit; cursor: pointer; color: var(--text);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; padding: 14px 0; min-height: 68px; border-radius: 16px;
-  background: color-mix(in srgb, var(--panel) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  gap: 2px; padding: 8px 0; min-height: 52px;
+  background: transparent; border: 0; border-radius: 12px;
+  -webkit-tap-highlight-color: transparent;
   transition: transform .06s ease, background .12s ease;
 }
-.pad-btn:active { transform: scale(.97); background: var(--accent2); }
-.pad-btn .pad-ic { font-size: 26px; line-height: 1; color: var(--accent);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 55%, transparent); }
-.pad-btn .pad-tx { font-size: 12px; letter-spacing: 1px; color: var(--muted); text-align: center; }
-.pad-btn .pad-tx small { font-size: 10px; opacity: .8; }
+.pad-btn:active { transform: scale(.96); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.pad-btn .pad-ic { font-size: 30px; line-height: 1; color: var(--accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent); }
+.pad-btn .pad-tx { font-size: 13px; letter-spacing: 2px; color: var(--text); opacity: .8; }
 
 /* 넓은 화면(PC·태블릿): 하단 터치패드·가장자리존 숨김 → 키보드 조작 */
 @media (min-width: 621px) {

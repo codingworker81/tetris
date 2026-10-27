@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.17';
+const VERSION = '1.1.18';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -362,6 +362,8 @@ const ThemeMgr = {
     const root = document.documentElement.style;
     Object.entries(th.vars).forEach(([k, v]) => root.setProperty(k, v));
     const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', th.vars['--bg']);
+    // 배경 주제 덮개 색: 라이트는 흰색 계열, 미드나잇은 검정 계열 (보드만 밝아 보이는 문제 방지)
+    root.setProperty('--bg-dim-rgb', sc === 'light' ? '238,241,247' : '0,0,0');
     this.boardBg = th.boardBg; this.gridLine = th.gridLine;
     if (typeof game !== 'undefined' && game) render(game);
   },
@@ -760,11 +762,18 @@ document.body.addEventListener('click', (e) => {
   }
 });
 el('pauseBtn').addEventListener('click', togglePause);
+// 소리 아이콘(SVG) on/off 토글 — 이모지 대신 통일된 벡터 아이콘 표시
+function setSoundIcon(on) {
+  const b = el('soundBtn'); if (!b || typeof b.querySelector !== 'function') return;
+  const onIc = b.querySelector('.ic-sound-on'), offIc = b.querySelector('.ic-sound-off');
+  if (onIc) onIc.classList.toggle('hidden', !on);
+  if (offIc) offIc.classList.toggle('hidden', on);
+}
 el('soundBtn').addEventListener('click', () => {
   const on = !Sound.settings.sound;           // 통합 소리 토글(효과음+BGM)
   Sound.settings.sound = on; Sound.settings.bgm = on;
   const s = STORE.loadSettings(); s.sound = on; s.bgm = on; STORE.saveSettings(s);
-  el('soundBtn').textContent = on ? '🔊' : '🔇';
+  setSoundIcon(on);
   BGM.refresh();                               // 무음이면 BGM 즉시 정지, 켜면 재생
 });
 
@@ -785,7 +794,7 @@ function syncSettingsUI() {
   document.querySelectorAll('#schemeGrid .theme-btn').forEach(b => b.classList.toggle('sel', b.dataset.scheme === s.scheme));
   document.querySelectorAll('#subjectGrid .theme-btn').forEach(b => b.classList.toggle('sel', b.dataset.subject === s.subject));
 }
-el('setSound').addEventListener('click', () => { const s = STORE.loadSettings(); s.sound = !s.sound; STORE.saveSettings(s); Sound.settings.sound = s.sound; syncSettingsUI(); el('soundBtn').textContent = s.sound ? '🔊' : '🔇'; });
+el('setSound').addEventListener('click', () => { const s = STORE.loadSettings(); s.sound = !s.sound; STORE.saveSettings(s); Sound.settings.sound = s.sound; syncSettingsUI(); setSoundIcon(s.sound); });
 el('setTouch').addEventListener('click', () => { const s = STORE.loadSettings(); s.showTouch = !s.showTouch; STORE.saveSettings(s); syncSettingsUI(); });
 el('setVolume').addEventListener('input', (e) => { const s = STORE.loadSettings(); s.volume = e.target.value / 100; STORE.saveSettings(s); Sound.settings.volume = s.volume; el('volLabel').textContent = e.target.value + '%'; });
 el('setBgm').addEventListener('click', () => { const s = STORE.loadSettings(); s.bgm = !s.bgm; STORE.saveSettings(s); Sound.settings.bgm = s.bgm; syncSettingsUI(); BGM.refresh(); });
@@ -870,7 +879,7 @@ window.addEventListener('orientationchange', onViewportChange);
   ThemeMgr.dim = s.bgDim;
   ThemeMgr.applyScheme(s.scheme);
   ThemeMgr.applySubject(s.subject, ThemeMgr.customImg);
-  el('soundBtn').textContent = s.sound ? '🔊' : '🔇';
+  setSoundIcon(s.sound);
   const vl = el('verLabel'); if (vl) vl.textContent = 'v' + VERSION;
   showScreen('menu');
 })();
