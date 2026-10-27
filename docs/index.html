@@ -12,14 +12,14 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="style.css?v=1.1.16" />
+<link rel="stylesheet" href="style.css?v=1.1.17" />
 </head>
 <body>
 <div id="app">
   <!-- 메인 메뉴 -->
   <section id="menu" class="screen active">
     <h1 class="logo">TETRIS</h1>
-    <p class="ver" id="verLabel">v1.1.16</p>
+    <p class="ver" id="verLabel">v1.1.17</p>
     <div class="menu-btns">
       <button class="mbtn primary" data-action="start">시작</button>
       <button class="mbtn" data-action="ranking">랭킹</button>
@@ -62,20 +62,15 @@
       <button class="edge-zone edge-right" data-k="right"><span class="edge-arrow">›</span><span class="edge-label">RIGHT</span></button>
     </div>
 
-    <!-- 하단 곡선형 조작: 회전 / 드랍 + 보조 -->
+    <!-- 하단 조작: 회전 / 드랍(짧게=하드드롭·길게=소프트) 큰 버튼 2개 -->
     <div class="touchpad" id="touchpad">
       <div class="pad-main">
-        <button class="pad-btn pad-rotate" data-k="rcw">
+        <button class="pad-btn" data-k="rcw">
           <span class="pad-ic">↻</span><span class="pad-tx">ROTATE / 회전</span>
         </button>
-        <button class="pad-btn pad-drop" data-k="hard">
-          <span class="pad-ic">⌄</span><span class="pad-tx">DROP / 드랍</span>
+        <button class="pad-btn" data-k="dropsoft">
+          <span class="pad-ic">⌄</span><span class="pad-tx">DROP / 드랍<br><small>길게=소프트</small></span>
         </button>
-      </div>
-      <div class="pad-sub">
-        <button class="sub-btn" data-k="rccw" title="반시계 회전">↺</button>
-        <button class="sub-btn" data-k="soft" title="소프트드롭">▼</button>
-        <button class="sub-btn" data-k="hold" title="홀드">HOLD</button>
       </div>
     </div>
 
@@ -166,7 +161,7 @@
   </section>
 </div>
 
-<script src="tetris.js?v=1.1.16"></script>
+<script src="tetris.js?v=1.1.17"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;

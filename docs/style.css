@@ -120,9 +120,10 @@ canvas#holdCanvas, canvas#nextCanvas {
 }
 .edge-left { left: 0; }
 .edge-right { right: 0; }
-.edge-zone:active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.edge-arrow { font-size: 40px; font-weight: 300; line-height: 1; opacity: .5; }
-.edge-label { font-size: 12px; letter-spacing: 2px; opacity: .45; }
+.edge-zone:active { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.edge-arrow { font-size: 42px; font-weight: 400; line-height: 1; opacity: .85;
+  color: var(--accent); text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent); }
+.edge-label { font-size: 12px; letter-spacing: 2px; opacity: .75; color: var(--text); }
 
 /* 하단 조작: 회전 / 드랍 큰 버튼 + 보조 */
 .touchpad {
@@ -134,32 +135,17 @@ canvas#holdCanvas, canvas#nextCanvas {
 .pad-btn {
   flex: 1; font: inherit; cursor: pointer; color: var(--text);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; padding: 12px 0; border-radius: 18px;
+  gap: 2px; padding: 14px 0; min-height: 68px; border-radius: 16px;
   background: color-mix(in srgb, var(--panel) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   transition: transform .06s ease, background .12s ease;
 }
 .pad-btn:active { transform: scale(.97); background: var(--accent2); }
-.pad-btn .pad-ic { font-size: 26px; line-height: 1; }
-.pad-btn .pad-tx { font-size: 12px; letter-spacing: 1px; color: var(--muted); }
-.pad-drop {
-  background: color-mix(in srgb, var(--accent) 85%, transparent);
-  border-color: var(--accent); color: #fff;
-}
-.pad-drop .pad-tx { color: rgba(255,255,255,.85); }
-.pad-drop:active { background: var(--accent); }
-.pad-sub { display: flex; gap: 8px; }
-.sub-btn {
-  flex: 1; font: inherit; font-size: 15px; font-weight: 700; padding: 8px 0;
-  min-height: 38px; border-radius: 12px; color: var(--text); cursor: pointer;
-  background: color-mix(in srgb, var(--panel) 60%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  transition: transform .06s ease, background .12s ease;
-}
-.sub-btn:active { transform: scale(.96); background: var(--accent2); }
+.pad-btn .pad-ic { font-size: 26px; line-height: 1; color: var(--accent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 55%, transparent); }
+.pad-btn .pad-tx { font-size: 12px; letter-spacing: 1px; color: var(--muted); text-align: center; }
+.pad-btn .pad-tx small { font-size: 10px; opacity: .8; }
 
 /* 넓은 화면(PC·태블릿): 하단 터치패드·가장자리존 숨김 → 키보드 조작 */
 @media (min-width: 621px) {
@@ -236,9 +222,9 @@ canvas#holdCanvas, canvas#nextCanvas {
 .setting-sub input[type=range] { flex: 1; accent-color: var(--accent); }
 
 /* 테마 전환 시 부드럽게 */
-html, body, .mbtn, .panel, .pad-btn, .sub-btn, .setting-row, .setting-block, .dialog, .rank-list li { transition: background-color .25s ease, color .25s ease, border-color .25s ease; }
+html, body, .mbtn, .panel, .pad-btn, .setting-row, .setting-block, .dialog, .rank-list li { transition: background-color .25s ease, color .25s ease, border-color .25s ease; }
 
 /* 접근성: 모션 최소화 설정 존중 */
 @media (prefers-reduced-motion: reduce) {
-  html, body, .mbtn, .panel, .pad-btn, .sub-btn, .setting-row, .setting-block, .dialog, .rank-list li { transition: none; }
+  html, body, .mbtn, .panel, .pad-btn, .setting-row, .setting-block, .dialog, .rank-list li { transition: none; }
 }

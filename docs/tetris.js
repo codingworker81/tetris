@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.16';
+const VERSION = '1.1.17';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -646,8 +646,39 @@ function doAction(k) {
     case 'hold': if (game.hold()) { Sound.rotate(); Haptics.tap(); } break;
   }
 }
-document.querySelectorAll('.edge-zone, .pad-btn, .sub-btn').forEach(btn => {
+
+// 드랍 버튼: 짧게 터치=하드드롭, 길게 터치(홀드)=소프트드롭 반복
+const DROP_HOLD_MS = 180;
+const dropState = {};
+function dropPress() {
+  if (!running || game.gameOver || paused) return;
+  Sound.ensure();
+  dropState.long = false;
+  clearTimeout(dropState.timer); clearInterval(dropState.rep);
+  // 일정 시간 넘게 누르면 '길게'로 전환 → 소프트드롭 반복
+  dropState.timer = setTimeout(() => {
+    dropState.long = true;
+    doAction('soft');
+    dropState.rep = setInterval(() => doAction('soft'), 80);
+  }, DROP_HOLD_MS);
+}
+function dropRelease() {
+  clearTimeout(dropState.timer); clearInterval(dropState.rep);
+  // 길게로 전환되기 전에 뗐으면 = 짧은 탭 → 하드드롭
+  if (!dropState.long) doAction('hard');
+  dropState.long = false;
+}
+
+document.querySelectorAll('.edge-zone, .pad-btn').forEach(btn => {
   const k = btn.dataset.k;
+  if (k === 'dropsoft') {
+    const p = (e) => { e.preventDefault(); dropPress(); };
+    const r = (e) => { if (e) e.preventDefault(); dropRelease(); };
+    btn.addEventListener('touchstart', p, { passive: false });
+    btn.addEventListener('touchend', r); btn.addEventListener('touchcancel', r);
+    btn.addEventListener('mousedown', p); btn.addEventListener('mouseup', r); btn.addEventListener('mouseleave', r);
+    return;
+  }
   const press = (e) => {
     e.preventDefault(); Sound.ensure(); doAction(k);
     if (k === 'left' || k === 'right' || k === 'soft') {
