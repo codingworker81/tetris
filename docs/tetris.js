@@ -376,27 +376,28 @@ const nextCanvas = document.getElementById('nextCanvas'), nctx = nextCanvas.getC
 let CELL = 24;
 
 function resizeBoard() {
-  // 세로/가로 레이아웃에 따라 보드 셀 크기 산출 (좌우·상하 잘림 방지, 세로 공간 최대 활용)
+  // CSS 분기(620px)와 동일 기준으로 stacked(세로 폰)/side(넓은 화면) 판단
   const wrap = document.querySelector('.game-wrap');
+  if (!wrap || wrap.clientHeight === 0) return; // 레이아웃 미확정 시 스킵(rAF 재호출)
   const leftSide = document.querySelector('.side.left');
   const rightSide = document.querySelector('.side.right');
-  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  const stacked = window.innerWidth <= 620;
 
   let availW, availH;
-  if (portrait) {
-    // 세로: 사이드 패널이 보드 '위'에 가로로 배치됨 → 보드는 가로폭 전부, 세로는 남은 높이
+  if (stacked) {
+    // 세로 폰: 사이드가 보드 위/아래 가로줄 → 보드는 가로폭 거의 전부, 세로는 남은 높이
     const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
-    availW = wrap.clientWidth - 12;                 // 좌우 패딩 여유
-    availH = wrap.clientHeight - sideH - 6 * 3;      // 상단 패널 2줄 높이 + gap 여유
+    availW = wrap.clientWidth - 12;
+    availH = wrap.clientHeight - sideH - 18; // 사이드 2줄 + gap 여유
   } else {
-    // 가로: 사이드 패널이 보드 '옆'에 세로로 배치됨
+    // 넓은 화면: 사이드가 보드 옆 세로 배치 (터치패드는 CSS로 숨김)
     const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
     availW = wrap.clientWidth - sideW - (10 * 2 + 16);
-    availH = wrap.clientHeight - 8;
+    availH = wrap.clientHeight - 16;
   }
   const cellByH = Math.floor(availH / ROWS);
   const cellByW = Math.floor(availW / COLS);
-  CELL = Math.max(10, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에
+  CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
 }
@@ -468,7 +469,13 @@ const el = (id) => document.getElementById(id);
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   el(id).classList.add('active');
-  if (id === 'game') resizeBoard();
+  if (id === 'game') {
+    resizeBoard();
+    // flex 레이아웃이 확정된 뒤 한 번 더 측정(최초 전환 시 높이 0 방지)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { resizeBoard(); if (game) render(game); });
+    });
+  }
 }
 
 function updateHud() { el('score').textContent = game.scorer.score; el('lines').textContent = game.scorer.lines; el('level').textContent = game.scorer.level; }
@@ -730,7 +737,13 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); defe
 el('installBtn').addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; el('installBtn').classList.add('hidden'); });
 
 /* ===== 초기화 ===== */
-window.addEventListener('resize', () => { if (el('game').classList.contains('active')) resizeBoard(); });
+function onViewportChange() {
+  if (!el('game').classList.contains('active')) return;
+  resizeBoard();
+  requestAnimationFrame(() => { resizeBoard(); if (game) render(game); });
+}
+window.addEventListener('resize', onViewportChange);
+window.addEventListener('orientationchange', onViewportChange);
 (function init() {
   const s = STORE.loadSettings();
   Sound.settings = s;
