@@ -1,5 +1,5 @@
 /* Tetris PWA 서비스워커 — 오프라인 캐시 (앱처럼 인터넷 없이도 실행) */
-const CACHE = 'tetris-v1.1.13';
+const CACHE = 'tetris-v1.1.14';
 const ASSETS = [
   './',
   './index.html',

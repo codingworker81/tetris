@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.13';
+const VERSION = '1.1.14';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -396,58 +396,66 @@ const nextCanvas = document.getElementById('nextCanvas'), nctx = nextCanvas.getC
 let CELL = 24;
 
 function resizeBoard() {
-  // CSS 분기(620px)와 동일 기준으로 stacked(세로 폰)/side(넓은 화면) 판단
-  const wrap = document.querySelector('.game-wrap');
-  if (!wrap) return;
-  const leftSide = document.querySelector('.side.left');
-  const rightSide = document.querySelector('.side.right');
+  // 새 레이아웃: #game = [상단바][보드무대 flex:1][터치패드]. 보드는 .board-stage의 실측 공간에 맞춤.
+  const stage = document.querySelector('.board-stage');
+  if (!stage) return;
   const touchpad = document.getElementById('touchpad');
-  const stacked = window.innerWidth <= 620;
+  const narrow = window.innerWidth <= 620;
 
-  // 세로 폰에서는 터치가 주 조작이므로 터치패드를 항상 표시(넓은 화면은 숨김)
-  if (touchpad) touchpad.style.display = stacked ? '' : 'none';
+  // 세로 폰: 하단 터치패드·가장자리존 사용 / 넓은 화면: 키보드 조작(숨김)
+  if (touchpad) touchpad.style.display = narrow ? '' : 'none';
+  document.querySelectorAll('.edge-zone').forEach(z => { z.style.display = narrow ? '' : 'none'; });
 
-  let availW, availH;
-  if (stacked) {
-    // 세로 폰: 상단 정보줄(사이드) + 하단 터치패드(절대고정) → 보드는 그 사이 남은 세로 공간
-    const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
-    // 터치패드는 absolute라 최초 측정이 0일 수 있으니 안전 최소치(190px)와 실측 중 큰 값
-    const padH = Math.max(touchpad ? touchpad.offsetHeight : 0, 190);
-    availW = window.innerWidth - 12;
-    availH = window.innerHeight - sideH - padH - 32; // 상단 사이드 + 하단 터치패드 확보
-  } else {
-    // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 크기 기준으로 계산(보드 크기와 분리 → 악순환 방지)
-    const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
-    availW = window.innerWidth - sideW - (10 * 2 + 24);
-    availH = window.innerHeight - 24; // 창 높이 기준(flex 측정 오차 회피)
+  // board-stage의 실제 가용 크기(= flex가 상단바/터치패드를 배치하고 남긴 공간).
+  // 측정이 0이면(최초 전환 등) 창 크기 기반 추정으로 폴백.
+  let availW = stage.clientWidth - 8;
+  let availH = stage.clientHeight - 8;
+  if (availW < 40 || availH < 40) {
+    availW = window.innerWidth - 16;
+    availH = window.innerHeight - (narrow ? 260 : 120);
   }
   const cellByH = Math.floor(availH / ROWS);
   const cellByW = Math.floor(availW / COLS);
-  CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에
+  CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 보드가 항상 무대 안
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
 
-  // HOLD/NEXT 캔버스 크기를 레이아웃에 맞게 확정(CSS 의존 제거)
-  if (stacked) {
-    const u = Math.max(40, Math.min(64, Math.floor(window.innerWidth / 7)));
-    holdCanvas.width = u; holdCanvas.height = u;
-    holdCanvas.style.width = u + 'px'; holdCanvas.style.height = u + 'px';
-    nextCanvas.width = u * 3; nextCanvas.height = u;
-    nextCanvas.style.width = (u * 3) + 'px'; nextCanvas.style.height = u + 'px'; nextCanvas.style.maxWidth = 'none';
+  // HOLD/NEXT 캔버스 크기 확정(상단 바에 세로 배치)
+  if (narrow) {
+    const nw = Math.max(54, Math.min(84, Math.floor(window.innerWidth / 6)));
+    nextCanvas.width = nw; nextCanvas.height = Math.floor(nw * 2.2);
+    nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = Math.floor(nw * 2.2) + 'px';
+    const hw = Math.floor(nw * 0.7);
+    holdCanvas.width = hw; holdCanvas.height = hw;
+    holdCanvas.style.width = hw + 'px'; holdCanvas.style.height = hw + 'px';
   } else {
-    holdCanvas.width = 72; holdCanvas.height = 72;
-    holdCanvas.style.width = '72px'; holdCanvas.style.height = '72px';
-    nextCanvas.width = 72; nextCanvas.height = 216;
-    nextCanvas.style.width = '72px'; nextCanvas.style.height = '216px'; nextCanvas.style.maxWidth = 'none';
+    nextCanvas.width = 84; nextCanvas.height = 184;
+    nextCanvas.style.width = '84px'; nextCanvas.style.height = '184px';
+    holdCanvas.width = 64; holdCanvas.height = 64;
+    holdCanvas.style.width = '64px'; holdCanvas.style.height = '64px';
   }
 }
 
 function drawCell(ctx, x, y, color, size = CELL) {
-  ctx.fillStyle = color; ctx.fillRect(x, y, size, size);
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
-  ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
-  // 하이라이트
-  ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x + 1, y + 1, size - 2, Math.max(2, size * 0.14));
+  // 네온 글로우 블록: 어두운 내부 + 빛나는 테두리
+  const inset = Math.max(1, size * 0.08);
+  // 글로우(테두리 발광) — 큰 셀에서만 강하게(미니 캔버스는 성능/가독성 위해 약하게)
+  if (size >= 14) {
+    ctx.save();
+    ctx.shadowColor = color; ctx.shadowBlur = Math.min(14, size * 0.4);
+    ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, size * 0.12);
+    ctx.strokeRect(x + inset + 0.5, y + inset + 0.5, size - inset * 2 - 1, size - inset * 2 - 1);
+    ctx.restore();
+  }
+  // 반투명 내부 채움
+  ctx.fillStyle = color + '2e'; // ~18% alpha
+  ctx.fillRect(x + inset, y + inset, size - inset * 2, size - inset * 2);
+  // 선명한 테두리
+  ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, size * 0.1);
+  ctx.strokeRect(x + inset + 0.5, y + inset + 0.5, size - inset * 2 - 1, size - inset * 2 - 1);
+  // 상단 하이라이트
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.fillRect(x + inset + 1, y + inset + 1, size - inset * 2 - 2, Math.max(1.5, size * 0.1));
 }
 
 function render(game) {
@@ -491,21 +499,8 @@ function render(game) {
   nctx.fillStyle = ThemeMgr.boardBg; nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   const nq = game.nextTypes(3);
   const accent = (SCHEMES[ThemeMgr.scheme] || SCHEMES.midnight).vars['--accent'];
-  if (window.innerWidth <= 620) {
-    // 가로 배치: 첫 칸 48%, 나머지 26%씩 → 왼쪽이 "다음"임이 한눈에
-    const W0 = nextCanvas.width, H0 = nextCanvas.height;
-    const widths = [W0 * 0.48, W0 * 0.26, W0 * 0.26];
-    let x = 0;
-    nq.forEach((t, i) => {
-      const bw = widths[i];
-      if (i === 0) { nctx.strokeStyle = accent; nctx.lineWidth = 2; nctx.strokeRect(x + 2, 2, bw - 4, H0 - 4); }
-      else { nctx.strokeStyle = ThemeMgr.gridLine; nctx.lineWidth = 1; nctx.beginPath(); nctx.moveTo(x + 1, 6); nctx.lineTo(x + 1, H0 - 6); nctx.stroke(); }
-      drawMiniBox(nctx, t, x, 0, bw, H0);
-      drawNextLabel(nctx, i, x + 5, 4, accent);
-      x += bw;
-    });
-  } else {
-    // 세로 배치: 맨 위가 "다음"
+  {
+    // 세로 배치: 맨 위가 "다음"(1번) — 크게+강조, 나머지는 작게+번호
     const H0 = nextCanvas.height, W0 = nextCanvas.width;
     const heights = [H0 * 0.46, H0 * 0.27, H0 * 0.27];
     let y = 0;
@@ -649,7 +644,7 @@ function doAction(k) {
     case 'hold': if (game.hold()) { Sound.rotate(); Haptics.tap(); } break;
   }
 }
-document.querySelectorAll('.tbtn').forEach(btn => {
+document.querySelectorAll('.edge-zone, .pad-btn, .sub-btn').forEach(btn => {
   const k = btn.dataset.k;
   const press = (e) => {
     e.preventDefault(); Sound.ensure(); doAction(k);
@@ -746,7 +741,8 @@ function syncSettingsUI() {
   el('setSound').dataset.on = String(s.sound); el('setSound').textContent = s.sound ? '켜짐' : '꺼짐';
   el('setVolume').value = Math.round(s.volume * 100); el('volLabel').textContent = Math.round(s.volume * 100) + '%';
   el('setTouch').dataset.on = String(s.showTouch); el('setTouch').textContent = s.showTouch ? '켜짐' : '꺼짐';
-  el('touchpad').classList.toggle('hidden', !s.showTouch);
+  // 터치패드 표시는 resizeBoard가 화면폭 기준으로 관리. 세로 폰에선 터치가 주 조작이라 항상 표시.
+  if (typeof resizeBoard === 'function') resizeBoard();
   el('setBgm').dataset.on = String(s.bgm); el('setBgm').textContent = s.bgm ? '켜짐' : '꺼짐';
   el('setBgmVol').value = Math.round(s.bgmVolume * 100); el('bgmVolLabel').textContent = Math.round(s.bgmVolume * 100) + '%';
   el('setHaptics').dataset.on = String(s.haptics); el('setHaptics').textContent = s.haptics ? '켜짐' : '꺼짐';
@@ -842,7 +838,6 @@ window.addEventListener('orientationchange', onViewportChange);
   ThemeMgr.applyScheme(s.scheme);
   ThemeMgr.applySubject(s.subject, ThemeMgr.customImg);
   el('soundBtn').textContent = s.sound ? '🔊' : '🔇';
-  el('touchpad').classList.toggle('hidden', !s.showTouch);
   const vl = el('verLabel'); if (vl) vl.textContent = 'v' + VERSION;
   showScreen('menu');
 })();

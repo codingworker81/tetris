@@ -12,14 +12,14 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="style.css?v=1.1.13" />
+<link rel="stylesheet" href="style.css?v=1.1.14" />
 </head>
 <body>
 <div id="app">
   <!-- 메인 메뉴 -->
   <section id="menu" class="screen active">
     <h1 class="logo">TETRIS</h1>
-    <p class="ver" id="verLabel">v1.1.13</p>
+    <p class="ver" id="verLabel">v1.1.14</p>
     <div class="menu-btns">
       <button class="mbtn primary" data-action="start">시작</button>
       <button class="mbtn" data-action="ranking">랭킹</button>
@@ -29,46 +29,53 @@
     <button id="installBtn" class="mbtn install hidden">앱 설치</button>
   </section>
 
-  <!-- 게임 화면 -->
+  <!-- 게임 화면 (네온 TETRIS 스타일) -->
   <section id="game" class="screen">
     <div id="bgLayer" class="bg-layer"></div>
-    <div class="game-wrap">
-      <div class="side left">
-        <div class="panel">
-          <div class="panel-title">HOLD</div>
-          <canvas id="holdCanvas" width="96" height="96"></canvas>
-        </div>
-        <div class="panel stats">
-          <div class="stat"><span>SCORE</span><b id="score">0</b></div>
-          <div class="stat"><span>LINES</span><b id="lines">0</b></div>
-          <div class="stat"><span>LEVEL</span><b id="level">1</b></div>
-        </div>
+
+    <!-- 상단 바: 좌 스탯 / 중앙 로고 / 우 NEXT -->
+    <div class="topbar">
+      <div class="hud-left">
+        <div class="hud-stat"><span>SCORE</span><b id="score">0</b></div>
+        <div class="hud-stat"><span>LEVEL</span><b id="level">1</b></div>
+        <div class="hud-stat"><span>LINES</span><b id="lines">0</b></div>
       </div>
-      <canvas id="board" class="board"></canvas>
-      <div class="side right">
-        <div class="panel">
-          <div class="panel-title">NEXT</div>
-          <canvas id="nextCanvas" width="96" height="260"></canvas>
-        </div>
-        <div class="side-btns">
+      <div class="hud-mid">
+        <div class="game-logo">TETRIS</div>
+        <div class="hud-icons">
           <button id="pauseBtn" class="icon-btn" title="일시정지">⏸</button>
           <button id="soundBtn" class="icon-btn" title="소리">🔊</button>
         </div>
       </div>
+      <div class="hud-right">
+        <div class="hud-cap">NEXT</div>
+        <canvas id="nextCanvas" width="96" height="260"></canvas>
+        <div class="hud-cap hold-cap">HOLD</div>
+        <canvas id="holdCanvas" width="72" height="72"></canvas>
+      </div>
     </div>
 
-    <!-- 터치 조작 패드 -->
+    <!-- 보드 + 좌우 반투명 터치존 -->
+    <div class="board-stage">
+      <button class="edge-zone edge-left" data-k="left"><span class="edge-arrow">‹</span><span class="edge-label">LEFT</span></button>
+      <canvas id="board" class="board"></canvas>
+      <button class="edge-zone edge-right" data-k="right"><span class="edge-arrow">›</span><span class="edge-label">RIGHT</span></button>
+    </div>
+
+    <!-- 하단 곡선형 조작: 회전 / 드랍 + 보조 -->
     <div class="touchpad" id="touchpad">
-      <div class="row">
-        <button class="tbtn" data-k="left">◀</button>
-        <button class="tbtn" data-k="rccw">↺</button>
-        <button class="tbtn" data-k="rcw">↻</button>
-        <button class="tbtn" data-k="right">▶</button>
+      <div class="pad-main">
+        <button class="pad-btn pad-rotate" data-k="rcw">
+          <span class="pad-ic">↻</span><span class="pad-tx">ROTATE / 회전</span>
+        </button>
+        <button class="pad-btn pad-drop" data-k="hard">
+          <span class="pad-ic">⌄</span><span class="pad-tx">DROP / 드랍</span>
+        </button>
       </div>
-      <div class="row">
-        <button class="tbtn wide" data-k="soft">▼ 소프트</button>
-        <button class="tbtn wide drop" data-k="hard">⬇ 하드드롭</button>
-        <button class="tbtn" data-k="hold">HOLD</button>
+      <div class="pad-sub">
+        <button class="sub-btn" data-k="rccw" title="반시계 회전">↺</button>
+        <button class="sub-btn" data-k="soft" title="소프트드롭">▼</button>
+        <button class="sub-btn" data-k="hold" title="홀드">HOLD</button>
       </div>
     </div>
 
@@ -159,7 +166,7 @@
   </section>
 </div>
 
-<script src="tetris.js?v=1.1.13"></script>
+<script src="tetris.js?v=1.1.14"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;
