@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.11';
+const VERSION = '1.1.12';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -409,11 +409,12 @@ function resizeBoard() {
 
   let availW, availH;
   if (stacked) {
-    // 세로 폰: 상단 정보줄(사이드) + 하단 터치패드 → 보드는 그 사이 남은 세로 공간
+    // 세로 폰: 상단 정보줄(사이드) + 하단 터치패드(절대고정) → 보드는 그 사이 남은 세로 공간
     const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
-    const padH = (touchpad ? (touchpad.offsetHeight || 160) : 0);
+    // 터치패드는 absolute라 최초 측정이 0일 수 있으니 안전 최소치(190px)와 실측 중 큰 값
+    const padH = Math.max(touchpad ? touchpad.offsetHeight : 0, 190);
     availW = window.innerWidth - 12;
-    availH = window.innerHeight - sideH - padH - 28; // 상단 사이드 + 하단 터치패드 확보
+    availH = window.innerHeight - sideH - padH - 32; // 상단 사이드 + 하단 터치패드 확보
   } else {
     // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 크기 기준으로 계산(보드 크기와 분리 → 악순환 방지)
     const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);

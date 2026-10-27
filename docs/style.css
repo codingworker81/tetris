@@ -104,8 +104,13 @@ canvas#holdCanvas, canvas#nextCanvas { display: block; background: rgba(5,7,15,.
   .stat { font-size: 10px; }
   .stat b { font-size: 15px; }
   .side-btns { flex-direction: row; gap: 8px; }
-  /* 터치패드는 항상 화면 바닥에 고정 → 조작 버튼이 잘리지 않음 */
-  .touchpad { flex: 0 0 auto; }
+  /* 터치패드를 화면 바닥에 '절대 고정' → flex 계산과 무관하게 항상 보임 */
+  .touchpad {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+    flex: 0 0 auto; background: rgba(0,0,0,.25);
+  }
+  /* 보드 영역은 터치패드와 겹치지 않도록 하단 여백 확보(JS가 보드 크기를 맞춤) */
+  .game-wrap { padding-bottom: 4px; }
 }
 
 /* 좁은 폰: 사이드 패널을 더 압축 */
