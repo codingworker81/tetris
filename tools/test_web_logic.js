@@ -126,7 +126,7 @@ ok('game over when spawn area blocked', g3.gameOver === true);
 
 // 10) v1.1 메타데이터: 버전·스킴(2종)·배경 주제 세트
 const { VERSION, SCHEMES, SUBJECTS } = API;
-eq('version is 1.1.20', VERSION, '1.1.20');
+eq('version is 1.1.21', VERSION, '1.1.21');
 eq('schemes are midnight+light only', Object.keys(SCHEMES).sort(), ['light', 'midnight']);
 ok('subjects include none/custom/city', ['none','animal','anime','flower','city','nature','custom'].every(k => k in SUBJECTS));
 

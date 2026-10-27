@@ -111,11 +111,11 @@ canvas#nextCanvas {
   box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);
   flex: 0 0 auto; align-self: center;
 }
-/* 좌우 터치존 — 보드 옆 고정폭 세로 영역(겹침 없음) */
+/* 좌우 터치존 — 보드 옆 고정폭 세로 영역(겹침 없음). 아이콘은 하단에 배치(양손 엄지 접근성) */
 .edge-zone {
   flex: 0 0 auto; width: 54px; z-index: 2;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 6px; border: 0; cursor: pointer; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 6px; padding-bottom: 14%; border: 0; cursor: pointer; color: var(--muted);
   background: transparent; -webkit-tap-highlight-color: transparent;
 }
 .edge-zone:active { background: color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 12px; }
