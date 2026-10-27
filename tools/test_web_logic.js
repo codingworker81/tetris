@@ -16,11 +16,13 @@ function fakeEl() {
     set() { return true; },
   });
 }
-const noopEl = { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, addEventListener() {}, getContext() { return fakeEl(); }, textContent: '', value: '', style: {}, width: 0, height: 0, clientHeight: 480, innerHTML: '' };
+const noopEl = { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, addEventListener() {}, getContext() { return fakeEl(); }, textContent: '', value: '', style: {}, width: 0, height: 0, clientHeight: 480, innerHTML: '', appendChild() {}, setAttribute() {}, getAttribute() { return ''; } };
 const documentShim = {
   getElementById: () => noopEl,
-  querySelector: () => ({ clientHeight: 480 }),
+  querySelector: () => ({ clientHeight: 480, setAttribute() {}, getAttribute() { return ''; } }),
   querySelectorAll: () => [],
+  createElement: () => Object.assign({}, noopEl, { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, style: {}, addEventListener() {}, appendChild() {} }),
+  documentElement: { style: { setProperty() {} } },
   addEventListener() {}, body: { addEventListener() {} },
 };
 function AudioStub() {
@@ -28,21 +30,26 @@ function AudioStub() {
   this.resume = function () {};
   this.currentTime = 0;
   this.createOscillator = function () { return { connect() {}, start() {}, stop() {}, frequency: {}, type: '' }; };
-  this.createGain = function () { return { connect() {}, gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} } }; };
+  this.createGain = function () { return { connect() {}, disconnect() {}, gain: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} } }; };
 }
 const windowShim = { addEventListener() {}, AudioContext: AudioStub };
 const localStorageShim = (() => { const m = {}; return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; } }; })();
 
 const sandbox = {
   window: windowShim, document: documentShim, localStorage: localStorageShim,
-  requestAnimationFrame: () => 0, setTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0,
+  navigator: { vibrate() { return true; } },
+  performance: { now: () => 0 },
+  requestAnimationFrame: () => 0, setTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, clearTimeout: () => 0,
   console,
 };
 sandbox.window.webkitAudioContext = sandbox.window.AudioContext;
 sandbox.window.localStorage = localStorageShim;
 vm.createContext(sandbox);
 
-const code = fs.readFileSync(path.join(__dirname, '..', 'web', 'tetris.js'), 'utf8');
+const docsPath = path.join(__dirname, '..', 'docs', 'tetris.js');
+const webPath = path.join(__dirname, '..', 'web', 'tetris.js');
+const srcPath = fs.existsSync(docsPath) ? docsPath : webPath;
+const code = fs.readFileSync(srcPath, 'utf8');
 vm.runInContext(code, sandbox, { filename: 'tetris.js' });
 
 const API = sandbox.window.__TETRIS__;

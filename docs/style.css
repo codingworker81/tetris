@@ -115,11 +115,36 @@ canvas#holdCanvas, canvas#nextCanvas { display: block; background: #05070f; bord
 .rank-list .empty { justify-content: center; color: var(--muted); }
 
 /* 설정 */
+#settings.active { justify-content: flex-start; }
+.settings-scroll { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; overflow-y: auto; padding: 4px 0 12px; flex: 1; min-height: 0; -webkit-overflow-scrolling: touch; }
 .setting-row { display: flex; align-items: center; gap: 12px; width: min(88vw,420px); background: var(--panel); padding: 14px 16px; border-radius: 10px; }
 .setting-row label { flex: 1; }
 .toggle { font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--panel2); background: var(--panel2); color: var(--text); cursor: pointer; }
 .toggle[data-on="true"] { background: var(--ok); color: #04231a; border-color: var(--ok); }
 .setting-row input[type=range] { flex: 1; accent-color: var(--accent); }
+
+/* 테마 선택 */
+.setting-block { width: min(88vw,420px); background: var(--panel); padding: 14px 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; }
+.setting-block > label { font-weight: 600; }
+.theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.theme-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 12px;
+  background: var(--panel2); border: 2px solid transparent; color: var(--text);
+}
+.theme-btn .sw, .theme-btn .sw2 { display: inline-block; width: 100%; height: 10px; border-radius: 4px; }
+.theme-btn .sw2 { height: 14px; }
+.theme-btn .tn { margin-top: 2px; }
+.theme-btn.sel { border-color: var(--accent); background: var(--panel); }
+.theme-btn:active { transform: scale(.96); }
+
+/* 테마 전환 시 부드럽게 */
+html, body, .mbtn, .panel, .touchpad .tbtn, .setting-row, .setting-block, .dialog, .rank-list li { transition: background-color .25s ease, color .25s ease, border-color .25s ease; }
+
+/* 접근성: 모션 최소화 설정 존중 */
+@media (prefers-reduced-motion: reduce) {
+  html, body, .mbtn, .panel, .touchpad .tbtn, .setting-row, .setting-block, .dialog, .rank-list li { transition: none; }
+}
 
 /* 가로/넓은 화면: 터치패드 숨김 축소, 보드 확대 */
 @media (min-width: 820px) and (orientation: landscape) {

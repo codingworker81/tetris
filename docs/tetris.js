@@ -201,7 +201,7 @@ class Game {
 /* ===== 저장 (storage.py → localStorage) ===== */
 const STORE = {
   SCORES: 'tetris.scores', SETTINGS: 'tetris.settings', TOP_N: 10,
-  DEFAULTS: { sound: true, volume: 0.7, showTouch: true },
+  DEFAULTS: { sound: true, volume: 0.7, showTouch: true, bgm: true, bgmVolume: 0.4, haptics: true, swipe: true, theme: 'midnight' },
   loadScores() { try { const v = JSON.parse(localStorage.getItem(this.SCORES)); return Array.isArray(v) ? v : []; } catch { return []; } },
   saveScores(s) { localStorage.setItem(this.SCORES, JSON.stringify(s.slice(0, this.TOP_N))); },
   addScore(name, score) {
@@ -216,7 +216,7 @@ const STORE = {
   saveSettings(s) { localStorage.setItem(this.SETTINGS, JSON.stringify(s)); },
 };
 
-/* ===== 오디오 (Web Audio로 효과음 합성 — PC의 make_sfx.py 역할) ===== */
+/* ===== 오디오 (Web Audio로 효과음 + 배경음악 합성) ===== */
 const Sound = {
   ctx: null, settings: STORE.loadSettings(),
   ensure() { if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.ctx = null; } } if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
@@ -233,6 +233,103 @@ const Sound = {
   harddrop() { this.beep(140, 0.09, 'sawtooth', 0.8); },
   lineclear(n) { const base = 440; for (let i = 0; i < Math.max(1, n); i++) setTimeout(() => this.beep(base + i * 120, 0.12, 'square', 0.9), i * 60); },
   gameover() { [330, 262, 196, 131].forEach((f, i) => setTimeout(() => this.beep(f, 0.22, 'sawtooth', 0.9), i * 160)); },
+};
+
+/* ===== 배경음악 BGM (Korobeiniki 스타일 멜로디를 Web Audio로 합성·반복) ===== */
+const BGM = {
+  playing: false, gain: null, timer: null, noteIdx: 0, startAt: 0,
+  tempo: 0.14, // 한 박(8분음표) 길이(초) — 레벨 올라가면 빨라짐
+  // [주파수Hz(0=쉼표), 길이(박)] — 테트리스 테마 한 소절(클래식 Korobeiniki A파트)
+  melody: [
+    [659,2],[494,1],[523,1],[587,2],[523,1],[494,1],
+    [440,2],[440,1],[523,1],[659,2],[587,1],[523,1],
+    [494,3],[523,1],[587,2],[659,2],
+    [523,2],[440,2],[440,2],[0,2],
+    [587,3],[698,1],[880,2],[784,1],[698,1],
+    [659,3],[523,1],[659,2],[587,1],[523,1],
+    [494,2],[494,1],[523,1],[587,2],[659,2],
+    [523,2],[440,2],[440,2],[0,2],
+  ],
+  // 베이스 라인(2박마다 저음) — 멜로디와 함께 반복
+  bass: [220,220,165,165,196,196,220,220,220,220,165,165,196,196,220,220],
+  start() {
+    if (this.playing) return; if (!this.settings.bgm) return;
+    Sound.ensure(); if (!Sound.ctx) return;
+    this.playing = true; this.noteIdx = 0;
+    this.gain = Sound.ctx.createGain();
+    this.gain.gain.value = this.settings.bgmVolume * 0.18;
+    this.gain.connect(Sound.ctx.destination);
+    this.startAt = Sound.ctx.currentTime + 0.05;
+    this.schedule();
+  },
+  get settings() { return Sound.settings; },
+  setLevel(level) { this.tempo = Math.max(0.085, 0.145 - (level - 1) * 0.006); },
+  schedule() {
+    if (!this.playing || !Sound.ctx) return;
+    // 한 소절을 스케줄하고, 끝나기 전에 다음 소절 예약(끊김 없는 반복)
+    let t = this.startAt, beat = this.tempo, barBeats = 0;
+    this.melody.forEach(([f, len]) => {
+      if (f > 0) this.tone(f, t, len * beat * 0.92, 'square', 1);
+      t += len * beat; barBeats += len;
+    });
+    // 베이스: 2박 간격
+    let bt = this.startAt;
+    for (let i = 0; i < this.bass.length; i++) { this.tone(this.bass[i], bt, beat * 2 * 0.9, 'triangle', 0.5); bt += beat * 2; }
+    const barDur = barBeats * beat;
+    this.startAt += barDur;
+    this.timer = setTimeout(() => this.schedule(), Math.max(50, (barDur - 0.3) * 1000));
+  },
+  tone(freq, when, dur, type, vol) {
+    if (!this.gain || !Sound.ctx) return;
+    const osc = Sound.ctx.createOscillator(), g = Sound.ctx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(vol, when + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    osc.connect(g); g.connect(this.gain); osc.start(when); osc.stop(when + dur + 0.02);
+  },
+  stop() {
+    this.playing = false; clearTimeout(this.timer); this.timer = null;
+    if (this.gain) { try { this.gain.disconnect(); } catch {} this.gain = null; }
+  },
+  setVolume(v) { if (this.gain) this.gain.gain.value = v * 0.18; },
+  refresh() { // 설정 변경 시: bgm 꺼지면 정지, 켜지고 게임중이면 시작
+    if (!this.settings.bgm) this.stop();
+    else if (running && !paused && !game.gameOver && !this.playing) this.start();
+  },
+};
+
+/* ===== 햅틱(진동) 피드백 ===== */
+const Haptics = {
+  on() { return Sound.settings.haptics && typeof navigator.vibrate === 'function'; },
+  tap() { if (this.on()) navigator.vibrate(10); },
+  move() { if (this.on()) navigator.vibrate(8); },
+  rotate() { if (this.on()) navigator.vibrate(12); },
+  drop() { if (this.on()) navigator.vibrate(22); },
+  clear(n) { if (this.on()) navigator.vibrate(n >= 4 ? [30, 40, 30, 40, 50] : [18, 25, 18]); },
+  over() { if (this.on()) navigator.vibrate([60, 50, 60, 50, 120]); },
+};
+
+/* ===== 배경 테마 ===== */
+const THEMES = {
+  midnight: { name: '미드나잇', vars: { '--bg':'#0b0e1a','--panel':'#151a2e','--panel2':'#1e2440','--grid':'#222844','--text':'#e8ecff','--muted':'#8b93b8','--accent':'#5b8cff','--accent2':'#3a66d6','--danger':'#ff5b6e','--ok':'#38d39f' }, boardBg:'#05070f', gridLine:'#141a2e' },
+  nebula:   { name: '네뷸라', vars: { '--bg':'#160d26','--panel':'#231640','--panel2':'#331f5c','--grid':'#3a2470','--text':'#f1e9ff','--muted':'#a99cc9','--accent':'#c061ff','--accent2':'#8a2be2','--danger':'#ff5b9e','--ok':'#4ad7c0' }, boardBg:'#0d0718', gridLine:'#2a1a4a' },
+  forest:   { name: '포레스트', vars: { '--bg':'#0a1710','--panel':'#122a1c','--panel2':'#1a3a28','--grid':'#214d33','--text':'#e4f5e9','--muted':'#8fb79e','--accent':'#4ade80','--accent2':'#16a34a','--danger':'#ff7a5b','--ok':'#5bd3a0' }, boardBg:'#061009', gridLine:'#14301f' },
+  sunset:   { name: '선셋', vars: { '--bg':'#1c0f0a','--panel':'#2e1a12','--panel2':'#44251a','--grid':'#5c3322','--text':'#fff0e6','--muted':'#c9a18f','--accent':'#ff8c42','--accent2':'#e8551f','--danger':'#ff4d4d','--ok':'#f5c33a' }, boardBg:'#150a05', gridLine:'#331a10' },
+  mono:     { name: '라이트', vars: { '--bg':'#eef1f7','--panel':'#ffffff','--panel2':'#dfe4ee','--grid':'#c3cad8','--text':'#1a2036','--muted':'#5a6480','--accent':'#3a66d6','--accent2':'#5b8cff','--danger':'#d63a4e','--ok':'#1a9e74' }, boardBg:'#f7f9fc', gridLine:'#d5dce8' },
+  retro:    { name: '레트로', vars: { '--bg':'#0f1a0f','--panel':'#152415','--panel2':'#1d331d','--grid':'#2a4a2a','--text':'#9bff9b','--muted':'#5a8f5a','--accent':'#7dff7d','--accent2':'#39b339','--danger':'#ff6b6b','--ok':'#b9ff6b' }, boardBg:'#081208', gridLine:'#163016' },
+};
+const ThemeMgr = {
+  current: 'midnight',
+  apply(name) {
+    const th = THEMES[name] || THEMES.midnight; this.current = THEMES[name] ? name : 'midnight';
+    const root = document.documentElement.style;
+    Object.entries(th.vars).forEach(([k, v]) => root.setProperty(k, v));
+    const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', th.vars['--bg']);
+    this.boardBg = th.boardBg; this.gridLine = th.gridLine;
+    if (typeof game !== 'undefined' && game) render(game);
+  },
+  boardBg: '#05070f', gridLine: '#141a2e',
 };
 
 /* ===== 렌더 ===== */
@@ -260,9 +357,9 @@ function drawCell(ctx, x, y, color, size = CELL) {
 }
 
 function render(game) {
-  bctx.fillStyle = '#05070f'; bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+  bctx.fillStyle = ThemeMgr.boardBg; bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
   // 그리드 라인
-  bctx.strokeStyle = '#141a2e'; bctx.lineWidth = 1;
+  bctx.strokeStyle = ThemeMgr.gridLine; bctx.lineWidth = 1;
   for (let c = 0; c <= COLS; c++) { bctx.beginPath(); bctx.moveTo(c * CELL, 0); bctx.lineTo(c * CELL, ROWS * CELL); bctx.stroke(); }
   for (let r = 0; r <= ROWS; r++) { bctx.beginPath(); bctx.moveTo(0, r * CELL); bctx.lineTo(COLS * CELL, r * CELL); bctx.stroke(); }
   // 고정 블록 (보이는 영역)
@@ -286,10 +383,10 @@ function render(game) {
     }
   }
   // HOLD
-  hctx.fillStyle = '#05070f'; hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
+  hctx.fillStyle = ThemeMgr.boardBg; hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
   if (game.holdType) drawMini(hctx, game.holdType, holdCanvas.width, holdCanvas.height, 0);
   // NEXT (3개)
-  nctx.fillStyle = '#05070f'; nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+  nctx.fillStyle = ThemeMgr.boardBg; nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   game.nextTypes(3).forEach((t, i) => drawMini(nctx, t, nextCanvas.width, 86, i * 86));
 }
 
@@ -329,20 +426,22 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
+let lastBgmLevel = 1;
 function handleEvents() {
-  const [cleared, , locked] = game.consumeEvents();
-  if (cleared > 0) Sound.lineclear(cleared);
-  else if (locked) Sound.harddrop();
+  const [cleared, levelUp, locked] = game.consumeEvents();
+  if (cleared > 0) { Sound.lineclear(cleared); Haptics.clear(cleared); }
+  else if (locked) { Sound.harddrop(); Haptics.drop(); }
+  if (levelUp && game.scorer.level !== lastBgmLevel) { lastBgmLevel = game.scorer.level; BGM.setLevel(game.scorer.level); }
 }
 
 function startGame() {
-  game = new Game(); running = true; paused = false; lastTime = 0; dropAcc = 0;
+  game = new Game(); running = true; paused = false; lastTime = 0; dropAcc = 0; lastBgmLevel = 1;
   el('pauseOverlay').classList.add('hidden'); el('overOverlay').classList.add('hidden');
-  Sound.ensure(); showScreen('game'); requestAnimationFrame(loop);
+  Sound.ensure(); showScreen('game'); BGM.setLevel(1); BGM.stop(); BGM.start(); requestAnimationFrame(loop);
 }
 
 function onGameOver() {
-  running = false; Sound.gameover();
+  running = false; BGM.stop(); Sound.gameover(); Haptics.over();
   el('finalScore').textContent = game.scorer.score;
   const entry = el('nameEntry');
   if (STORE.isHighScore(game.scorer.score)) { entry.classList.remove('hidden'); el('nameInput').value = ''; }
@@ -368,13 +467,13 @@ document.addEventListener('keydown', (e) => {
   if (game.gameOver) return;
   let used = true;
   switch (e.key) {
-    case 'ArrowLeft': if (game.moveLeft()) Sound.move(); break;
-    case 'ArrowRight': if (game.moveRight()) Sound.move(); break;
+    case 'ArrowLeft': if (game.moveLeft()) { Sound.move(); Haptics.move(); } break;
+    case 'ArrowRight': if (game.moveRight()) { Sound.move(); Haptics.move(); } break;
     case 'ArrowDown': game.softDrop(); handleEvents(); break;
     case ' ': game.hardDrop(); handleEvents(); break;
-    case 'ArrowUp': case 'x': case 'X': if (game.rotateCw()) Sound.rotate(); break;
-    case 'z': case 'Z': if (game.rotateCcw()) Sound.rotate(); break;
-    case 'c': case 'C': if (game.hold()) Sound.rotate(); break;
+    case 'ArrowUp': case 'x': case 'X': if (game.rotateCw()) { Sound.rotate(); Haptics.rotate(); } break;
+    case 'z': case 'Z': if (game.rotateCcw()) { Sound.rotate(); Haptics.rotate(); } break;
+    case 'c': case 'C': if (game.hold()) { Sound.rotate(); Haptics.tap(); } break;
     case 'p': case 'P': case 'Escape': togglePause(); break;
     default: used = false;
   }
@@ -386,13 +485,13 @@ const repeatTimers = {};
 function doAction(k) {
   if (!running || game.gameOver || paused) return;
   switch (k) {
-    case 'left': if (game.moveLeft()) Sound.move(); break;
-    case 'right': if (game.moveRight()) Sound.move(); break;
+    case 'left': if (game.moveLeft()) { Sound.move(); Haptics.move(); } break;
+    case 'right': if (game.moveRight()) { Sound.move(); Haptics.move(); } break;
     case 'soft': game.softDrop(); handleEvents(); break;
     case 'hard': game.hardDrop(); handleEvents(); break;
-    case 'rcw': if (game.rotateCw()) Sound.rotate(); break;
-    case 'rccw': if (game.rotateCcw()) Sound.rotate(); break;
-    case 'hold': if (game.hold()) Sound.rotate(); break;
+    case 'rcw': if (game.rotateCw()) { Sound.rotate(); Haptics.rotate(); } break;
+    case 'rccw': if (game.rotateCcw()) { Sound.rotate(); Haptics.rotate(); } break;
+    case 'hold': if (game.hold()) { Sound.rotate(); Haptics.tap(); } break;
   }
 }
 document.querySelectorAll('.tbtn').forEach(btn => {
@@ -410,12 +509,59 @@ document.querySelectorAll('.tbtn').forEach(btn => {
   btn.addEventListener('mousedown', press); btn.addEventListener('mouseup', release); btn.addEventListener('mouseleave', release);
 });
 
+/* ===== 입력: 스와이프 제스처 (보드 위) =====
+ * 가로 스와이프 = 좌우 이동(거리에 비례해 여러 칸),
+ * 아래로 빠르게 쓸기 = 하드드롭, 천천히 아래로 = 소프트드롭,
+ * 짧은 탭 = 시계회전. 설정에서 끌 수 있음. */
+let sw = null;
+function onSwipeStart(x, y) {
+  if (!running || game.gameOver || paused || !Sound.settings.swipe) { sw = null; return; }
+  Sound.ensure();
+  sw = { x0: x, y0: y, x: x, y: y, t0: performance.now(), movedCols: 0, softCount: 0, dropped: false, moved: false };
+}
+function onSwipeMove(x, y) {
+  if (!sw || sw.dropped) return;
+  const unit = Math.max(18, CELL); // 한 칸 이동에 필요한 픽셀
+  // 가로 이동
+  const dx = x - sw.x0;
+  const targetCols = Math.trunc(dx / unit);
+  while (sw.movedCols < targetCols) { if (game.moveRight()) { Sound.move(); Haptics.move(); sw.moved = true; } sw.movedCols++; }
+  while (sw.movedCols > targetCols) { if (game.moveLeft()) { Sound.move(); Haptics.move(); sw.moved = true; } sw.movedCols--; }
+  // 세로(아래)
+  const dy = y - sw.y;
+  if (dy > unit * 0.9) {
+    const steps = Math.floor(dy / (unit * 0.9));
+    for (let i = 0; i < steps; i++) { game.softDrop(); handleEvents(); sw.softCount++; sw.moved = true; }
+    sw.y = y;
+  }
+  sw.x = x;
+}
+function onSwipeEnd(x, y) {
+  if (!sw) return;
+  const dt = performance.now() - sw.t0;
+  const dy = y - sw.y0, dx = x - sw.x0;
+  const unit = Math.max(18, CELL);
+  // 빠르게 아래로 크게 쓸기 = 하드드롭(플릭)
+  if (!sw.dropped && dy > unit * 2.2 && dt < 260 && Math.abs(dy) > Math.abs(dx)) {
+    game.hardDrop(); handleEvents();
+  } else if (!sw.moved && dt < 220 && Math.abs(dx) < unit * 0.6 && Math.abs(dy) < unit * 0.6) {
+    // 짧은 탭 = 시계회전
+    if (game.rotateCw()) { Sound.rotate(); Haptics.rotate(); }
+  }
+  sw = null;
+}
+boardCanvas.addEventListener('touchstart', (e) => { const t = e.touches[0]; onSwipeStart(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+boardCanvas.addEventListener('touchmove', (e) => { const t = e.touches[0]; onSwipeMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+boardCanvas.addEventListener('touchend', (e) => { const t = (e.changedTouches && e.changedTouches[0]) || {}; onSwipeEnd(t.clientX || sw?.x || 0, t.clientY || sw?.y || 0); }, { passive: false });
+boardCanvas.addEventListener('touchcancel', () => { sw = null; });
+
 /* ===== 메뉴/오버레이 버튼 ===== */
 function togglePause() {
   if (!running || game.gameOver) return;
   paused = !paused;
   el('pauseOverlay').classList.toggle('hidden', !paused);
-  if (!paused) { lastTime = 0; requestAnimationFrame(loop); }
+  if (paused) { BGM.stop(); }
+  else { BGM.start(); lastTime = 0; requestAnimationFrame(loop); }
 }
 document.body.addEventListener('click', (e) => {
   const action = e.target.dataset && e.target.dataset.action;
@@ -424,7 +570,7 @@ document.body.addEventListener('click', (e) => {
     case 'start': startGame(); break;
     case 'ranking': renderRanking(); showScreen('ranking'); break;
     case 'settings': syncSettingsUI(); showScreen('settings'); break;
-    case 'toMenu': running = false; showScreen('menu'); break;
+    case 'toMenu': running = false; BGM.stop(); showScreen('menu'); break;
     case 'resume': togglePause(); break;
     case 'restart': startGame(); break;
     case 'saveScore': { STORE.addScore(el('nameInput').value.trim(), game.scorer.score); el('nameEntry').classList.add('hidden'); break; }
@@ -443,10 +589,34 @@ function syncSettingsUI() {
   el('setVolume').value = Math.round(s.volume * 100); el('volLabel').textContent = Math.round(s.volume * 100) + '%';
   el('setTouch').dataset.on = String(s.showTouch); el('setTouch').textContent = s.showTouch ? '켜짐' : '꺼짐';
   el('touchpad').classList.toggle('hidden', !s.showTouch);
+  el('setBgm').dataset.on = String(s.bgm); el('setBgm').textContent = s.bgm ? '켜짐' : '꺼짐';
+  el('setBgmVol').value = Math.round(s.bgmVolume * 100); el('bgmVolLabel').textContent = Math.round(s.bgmVolume * 100) + '%';
+  el('setHaptics').dataset.on = String(s.haptics); el('setHaptics').textContent = s.haptics ? '켜짐' : '꺼짐';
+  el('setSwipe').dataset.on = String(s.swipe); el('setSwipe').textContent = s.swipe ? '켜짐' : '꺼짐';
+  // 테마 선택 버튼 활성 표시
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('sel', b.dataset.theme === s.theme));
 }
 el('setSound').addEventListener('click', () => { const s = STORE.loadSettings(); s.sound = !s.sound; STORE.saveSettings(s); Sound.settings.sound = s.sound; syncSettingsUI(); el('soundBtn').textContent = s.sound ? '🔊' : '🔇'; });
 el('setTouch').addEventListener('click', () => { const s = STORE.loadSettings(); s.showTouch = !s.showTouch; STORE.saveSettings(s); syncSettingsUI(); });
 el('setVolume').addEventListener('input', (e) => { const s = STORE.loadSettings(); s.volume = e.target.value / 100; STORE.saveSettings(s); Sound.settings.volume = s.volume; el('volLabel').textContent = e.target.value + '%'; });
+el('setBgm').addEventListener('click', () => { const s = STORE.loadSettings(); s.bgm = !s.bgm; STORE.saveSettings(s); Sound.settings.bgm = s.bgm; syncSettingsUI(); BGM.refresh(); });
+el('setBgmVol').addEventListener('input', (e) => { const s = STORE.loadSettings(); s.bgmVolume = e.target.value / 100; STORE.saveSettings(s); Sound.settings.bgmVolume = s.bgmVolume; BGM.setVolume(s.bgmVolume); el('bgmVolLabel').textContent = e.target.value + '%'; });
+el('setHaptics').addEventListener('click', () => { const s = STORE.loadSettings(); s.haptics = !s.haptics; STORE.saveSettings(s); Sound.settings.haptics = s.haptics; syncSettingsUI(); if (s.haptics && navigator.vibrate) navigator.vibrate(20); });
+el('setSwipe').addEventListener('click', () => { const s = STORE.loadSettings(); s.swipe = !s.swipe; STORE.saveSettings(s); Sound.settings.swipe = s.swipe; syncSettingsUI(); });
+// 테마 버튼 — 동적 생성
+(function buildThemeButtons() {
+  const wrap = el('themeGrid'); if (!wrap) return;
+  Object.entries(THEMES).forEach(([key, th]) => {
+    const b = document.createElement('button');
+    b.className = 'theme-btn'; b.dataset.theme = key; b.type = 'button';
+    b.innerHTML = `<span class="sw" style="background:${th.vars['--accent']}"></span><span class="sw2" style="background:${th.boardBg}"></span><span class="tn">${th.name}</span>`;
+    b.addEventListener('click', () => {
+      const s = STORE.loadSettings(); s.theme = key; STORE.saveSettings(s);
+      ThemeMgr.apply(key); syncSettingsUI(); Haptics.tap();
+    });
+    wrap.appendChild(b);
+  });
+})();
 
 /* ===== PWA 설치 프롬프트 ===== */
 let deferredPrompt = null;
@@ -458,6 +628,7 @@ window.addEventListener('resize', () => { if (el('game').classList.contains('act
 (function init() {
   const s = STORE.loadSettings();
   Sound.settings = s;
+  ThemeMgr.apply(s.theme);
   el('soundBtn').textContent = s.sound ? '🔊' : '🔇';
   el('touchpad').classList.toggle('hidden', !s.showTouch);
   // 버전 라벨(선택): 전역에서 노출되면 반영
@@ -465,4 +636,4 @@ window.addEventListener('resize', () => { if (el('game').classList.contains('act
 })();
 
 /* 테스트 훅: 로직 모듈을 전역에 노출 (headless 검증용) */
-window.__TETRIS__ = { Board, Piece, SevenBag, Scorer, Game, cellsFor, tryRotate, canMove, lineScore, levelForLines, gravityIntervalMs, COLS, ROWS, TYPES };
+window.__TETRIS__ = { Board, Piece, SevenBag, Scorer, Game, cellsFor, tryRotate, canMove, lineScore, levelForLines, gravityIntervalMs, COLS, ROWS, TYPES, THEMES };
