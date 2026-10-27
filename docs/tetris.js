@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.7';
+const VERSION = '1.1.8';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -405,8 +405,6 @@ function resizeBoard() {
   CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
-  const diag = document.getElementById('diag');
-  if (diag) diag.textContent = `v${VERSION} ${window.innerWidth}x${window.innerHeight} ${stacked ? 'stack' : 'side'} availH=${availH} sideW=${(leftSide?leftSide.offsetWidth:0)+(rightSide?rightSide.offsetWidth:0)} CELL=${CELL}`;
 }
 
 function drawCell(ctx, x, y, color, size = CELL) {
