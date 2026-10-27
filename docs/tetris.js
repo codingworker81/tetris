@@ -201,7 +201,7 @@ class Game {
 /* ===== 저장 (storage.py → localStorage) ===== */
 const STORE = {
   SCORES: 'tetris.scores', SETTINGS: 'tetris.settings', TOP_N: 10,
-  DEFAULTS: { sound: true, volume: 0.7, showTouch: true, bgm: true, bgmVolume: 0.4, haptics: true, swipe: true, theme: 'midnight' },
+  DEFAULTS: { sound: true, volume: 0.7, showTouch: true, bgm: true, bgmVolume: 0.4, haptics: true, swipe: true, scheme: 'midnight', subject: 'none', bgDim: 0.55 },
   loadScores() { try { const v = JSON.parse(localStorage.getItem(this.SCORES)); return Array.isArray(v) ? v : []; } catch { return []; } },
   saveScores(s) { localStorage.setItem(this.SCORES, JSON.stringify(s.slice(0, this.TOP_N))); },
   addScore(name, score) {
@@ -214,6 +214,9 @@ const STORE = {
   },
   loadSettings() { try { return Object.assign({}, this.DEFAULTS, JSON.parse(localStorage.getItem(this.SETTINGS)) || {}); } catch { return Object.assign({}, this.DEFAULTS); } },
   saveSettings(s) { localStorage.setItem(this.SETTINGS, JSON.stringify(s)); },
+  CUSTOM_IMG: 'tetris.customBg',
+  loadCustomImg() { try { return localStorage.getItem(this.CUSTOM_IMG) || null; } catch { return null; } },
+  saveCustomImg(dataUrl) { try { if (dataUrl) localStorage.setItem(this.CUSTOM_IMG, dataUrl); else localStorage.removeItem(this.CUSTOM_IMG); return true; } catch { return false; } },
 };
 
 /* ===== 오디오 (Web Audio로 효과음 + 배경음악 합성) ===== */
@@ -311,23 +314,56 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const THEMES = {
+const VERSION = '1.1.0';
+
+// 화면 색상(스킴) — 미드나잇/라이트 2종만
+const SCHEMES = {
   midnight: { name: '미드나잇', vars: { '--bg':'#0b0e1a','--panel':'#151a2e','--panel2':'#1e2440','--grid':'#222844','--text':'#e8ecff','--muted':'#8b93b8','--accent':'#5b8cff','--accent2':'#3a66d6','--danger':'#ff5b6e','--ok':'#38d39f' }, boardBg:'#05070f', gridLine:'#141a2e' },
-  nebula:   { name: '네뷸라', vars: { '--bg':'#160d26','--panel':'#231640','--panel2':'#331f5c','--grid':'#3a2470','--text':'#f1e9ff','--muted':'#a99cc9','--accent':'#c061ff','--accent2':'#8a2be2','--danger':'#ff5b9e','--ok':'#4ad7c0' }, boardBg:'#0d0718', gridLine:'#2a1a4a' },
-  forest:   { name: '포레스트', vars: { '--bg':'#0a1710','--panel':'#122a1c','--panel2':'#1a3a28','--grid':'#214d33','--text':'#e4f5e9','--muted':'#8fb79e','--accent':'#4ade80','--accent2':'#16a34a','--danger':'#ff7a5b','--ok':'#5bd3a0' }, boardBg:'#061009', gridLine:'#14301f' },
-  sunset:   { name: '선셋', vars: { '--bg':'#1c0f0a','--panel':'#2e1a12','--panel2':'#44251a','--grid':'#5c3322','--text':'#fff0e6','--muted':'#c9a18f','--accent':'#ff8c42','--accent2':'#e8551f','--danger':'#ff4d4d','--ok':'#f5c33a' }, boardBg:'#150a05', gridLine:'#331a10' },
-  mono:     { name: '라이트', vars: { '--bg':'#eef1f7','--panel':'#ffffff','--panel2':'#dfe4ee','--grid':'#c3cad8','--text':'#1a2036','--muted':'#5a6480','--accent':'#3a66d6','--accent2':'#5b8cff','--danger':'#d63a4e','--ok':'#1a9e74' }, boardBg:'#f7f9fc', gridLine:'#d5dce8' },
-  retro:    { name: '레트로', vars: { '--bg':'#0f1a0f','--panel':'#152415','--panel2':'#1d331d','--grid':'#2a4a2a','--text':'#9bff9b','--muted':'#5a8f5a','--accent':'#7dff7d','--accent2':'#39b339','--danger':'#ff6b6b','--ok':'#b9ff6b' }, boardBg:'#081208', gridLine:'#163016' },
+  light:    { name: '라이트', vars: { '--bg':'#eef1f7','--panel':'#ffffff','--panel2':'#dfe4ee','--grid':'#c3cad8','--text':'#1a2036','--muted':'#5a6480','--accent':'#3a66d6','--accent2':'#5b8cff','--danger':'#d63a4e','--ok':'#1a9e74' }, boardBg:'#f7f9fc', gridLine:'#d5dce8' },
 };
+
+// 배경 주제 — CSS 그라데이션/패턴으로 구현(외부 이미지 없이, 오프라인 PWA 유지).
+// icon: 미리보기 이모지, css: #bgLayer에 적용할 background 값. custom은 사용자 업로드 이미지.
+const SUBJECTS = {
+  none:   { name: '없음',       icon: '🚫', css: 'transparent' },
+  animal: { name: '동물',       icon: '🐾', css: 'radial-gradient(circle at 20% 30%, rgba(255,183,94,.35), transparent 40%), radial-gradient(circle at 80% 70%, rgba(120,200,120,.3), transparent 45%), linear-gradient(160deg,#2b1d10,#13240f)' },
+  anime:  { name: '애니메이션', icon: '✨', css: 'radial-gradient(circle at 30% 20%, rgba(255,120,200,.45), transparent 42%), radial-gradient(circle at 75% 60%, rgba(120,170,255,.4), transparent 45%), linear-gradient(140deg,#2a0f3a,#0f1740)' },
+  flower: { name: '꽃',         icon: '🌸', css: 'radial-gradient(circle at 25% 25%, rgba(255,150,190,.5), transparent 38%), radial-gradient(circle at 70% 35%, rgba(255,210,120,.4), transparent 36%), radial-gradient(circle at 55% 80%, rgba(180,120,255,.4), transparent 40%), linear-gradient(160deg,#30182a,#17210f)' },
+  city:   { name: '도시',       icon: '🌆', css: 'linear-gradient(180deg,#1a1033 0%,#3a2a66 45%,#ff7a4d 72%,#ffb37a 100%)' },
+  nature: { name: '자연',       icon: '🏞️', css: 'linear-gradient(180deg,#8fd3ff 0%,#bfe8c8 45%,#5ba85f 72%,#2f6b35 100%)' },
+  custom: { name: 'Custom',     icon: '🖼️', css: null }, // 사용자 이미지(data URL)
+};
+
 const ThemeMgr = {
-  current: 'midnight',
-  apply(name) {
-    const th = THEMES[name] || THEMES.midnight; this.current = THEMES[name] ? name : 'midnight';
+  scheme: 'midnight', subject: 'none', dim: 0.55, customImg: null,
+  applyScheme(name) {
+    const sc = SCHEMES[name] ? name : 'midnight'; this.scheme = sc;
+    const th = SCHEMES[sc];
     const root = document.documentElement.style;
     Object.entries(th.vars).forEach(([k, v]) => root.setProperty(k, v));
     const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', th.vars['--bg']);
     this.boardBg = th.boardBg; this.gridLine = th.gridLine;
     if (typeof game !== 'undefined' && game) render(game);
+  },
+  applySubject(name, customDataUrl) {
+    this.subject = SUBJECTS[name] ? name : 'none';
+    if (customDataUrl !== undefined) this.customImg = customDataUrl;
+    this.renderBg();
+  },
+  setDim(v) { this.dim = Math.max(0, Math.min(0.95, v)); this.renderBg(); },
+  renderBg() {
+    const layer = document.getElementById('bgLayer'); if (!layer) return;
+    const subj = SUBJECTS[this.subject] || SUBJECTS.none;
+    let img = '';
+    if (this.subject === 'custom' && this.customImg) img = `url("${this.customImg}")`;
+    else if (subj.css && subj.css !== 'transparent') img = subj.css;
+    if (!img) { layer.style.backgroundImage = 'none'; layer.style.opacity = '0'; return; }
+    layer.style.opacity = '1';
+    layer.style.backgroundImage = img;
+    layer.style.backgroundSize = 'cover';
+    layer.style.backgroundPosition = 'center';
+    // 가독성: 어둡게 덮는 오버레이는 ::before(CSS)에서 처리, 여기서는 변수만
+    layer.style.setProperty('--bg-dim', String(this.dim));
   },
   boardBg: '#05070f', gridLine: '#141a2e',
 };
@@ -340,10 +376,18 @@ const nextCanvas = document.getElementById('nextCanvas'), nctx = nextCanvas.getC
 let CELL = 24;
 
 function resizeBoard() {
-  // 보드 캔버스를 사용 가능한 세로 높이에 맞춰 셀 크기 산출
+  // 보드 캔버스를 사용 가능한 '가로/세로 모두'에 맞춰 셀 크기 산출 (좌우 잘림 방지)
   const wrap = document.querySelector('.game-wrap');
-  const avail = wrap.clientHeight - 8;
-  CELL = Math.max(12, Math.floor(avail / ROWS));
+  const leftSide = document.querySelector('.side.left');
+  const rightSide = document.querySelector('.side.right');
+  const availH = wrap.clientHeight - 8;
+  // 좌우 패널이 가로로 공간을 차지하므로 보드가 쓸 수 있는 가로폭을 뺀다
+  const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
+  const gaps = 10 * 2 + 16; // game-wrap gap(10)*2 + padding 여유
+  const availW = wrap.clientWidth - sideW - gaps;
+  const cellByH = Math.floor(availH / ROWS);
+  const cellByW = Math.floor(availW / COLS);
+  CELL = Math.max(10, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
 }
@@ -357,7 +401,15 @@ function drawCell(ctx, x, y, color, size = CELL) {
 }
 
 function render(game) {
-  bctx.fillStyle = ThemeMgr.boardBg; bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+  const subjectOn = ThemeMgr.subject && ThemeMgr.subject !== 'none';
+  if (subjectOn) {
+    // 배경 주제가 보이도록 보드를 반투명하게
+    bctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+    bctx.fillStyle = ThemeMgr.scheme === 'light' ? 'rgba(247,249,252,0.55)' : 'rgba(5,7,15,0.55)';
+    bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+  } else {
+    bctx.fillStyle = ThemeMgr.boardBg; bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+  }
   // 그리드 라인
   bctx.strokeStyle = ThemeMgr.gridLine; bctx.lineWidth = 1;
   for (let c = 0; c <= COLS; c++) { bctx.beginPath(); bctx.moveTo(c * CELL, 0); bctx.lineTo(c * CELL, ROWS * CELL); bctx.stroke(); }
@@ -593,8 +645,10 @@ function syncSettingsUI() {
   el('setBgmVol').value = Math.round(s.bgmVolume * 100); el('bgmVolLabel').textContent = Math.round(s.bgmVolume * 100) + '%';
   el('setHaptics').dataset.on = String(s.haptics); el('setHaptics').textContent = s.haptics ? '켜짐' : '꺼짐';
   el('setSwipe').dataset.on = String(s.swipe); el('setSwipe').textContent = s.swipe ? '켜짐' : '꺼짐';
-  // 테마 선택 버튼 활성 표시
-  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('sel', b.dataset.theme === s.theme));
+  el('setBgDim').value = Math.round(s.bgDim * 100); el('bgDimLabel').textContent = Math.round(s.bgDim * 100) + '%';
+  // 선택 상태 표시
+  document.querySelectorAll('#schemeGrid .theme-btn').forEach(b => b.classList.toggle('sel', b.dataset.scheme === s.scheme));
+  document.querySelectorAll('#subjectGrid .theme-btn').forEach(b => b.classList.toggle('sel', b.dataset.subject === s.subject));
 }
 el('setSound').addEventListener('click', () => { const s = STORE.loadSettings(); s.sound = !s.sound; STORE.saveSettings(s); Sound.settings.sound = s.sound; syncSettingsUI(); el('soundBtn').textContent = s.sound ? '🔊' : '🔇'; });
 el('setTouch').addEventListener('click', () => { const s = STORE.loadSettings(); s.showTouch = !s.showTouch; STORE.saveSettings(s); syncSettingsUI(); });
@@ -603,20 +657,63 @@ el('setBgm').addEventListener('click', () => { const s = STORE.loadSettings(); s
 el('setBgmVol').addEventListener('input', (e) => { const s = STORE.loadSettings(); s.bgmVolume = e.target.value / 100; STORE.saveSettings(s); Sound.settings.bgmVolume = s.bgmVolume; BGM.setVolume(s.bgmVolume); el('bgmVolLabel').textContent = e.target.value + '%'; });
 el('setHaptics').addEventListener('click', () => { const s = STORE.loadSettings(); s.haptics = !s.haptics; STORE.saveSettings(s); Sound.settings.haptics = s.haptics; syncSettingsUI(); if (s.haptics && navigator.vibrate) navigator.vibrate(20); });
 el('setSwipe').addEventListener('click', () => { const s = STORE.loadSettings(); s.swipe = !s.swipe; STORE.saveSettings(s); Sound.settings.swipe = s.swipe; syncSettingsUI(); });
-// 테마 버튼 — 동적 생성
-(function buildThemeButtons() {
-  const wrap = el('themeGrid'); if (!wrap) return;
-  Object.entries(THEMES).forEach(([key, th]) => {
+el('setBgDim').addEventListener('input', (e) => { const s = STORE.loadSettings(); s.bgDim = e.target.value / 100; STORE.saveSettings(s); ThemeMgr.setDim(s.bgDim); el('bgDimLabel').textContent = e.target.value + '%'; });
+
+// 화면 색상(스킴) 버튼
+(function buildSchemeButtons() {
+  const wrap = el('schemeGrid'); if (!wrap) return;
+  Object.entries(SCHEMES).forEach(([key, sc]) => {
     const b = document.createElement('button');
-    b.className = 'theme-btn'; b.dataset.theme = key; b.type = 'button';
-    b.innerHTML = `<span class="sw" style="background:${th.vars['--accent']}"></span><span class="sw2" style="background:${th.boardBg}"></span><span class="tn">${th.name}</span>`;
+    b.className = 'theme-btn'; b.dataset.scheme = key; b.type = 'button';
+    b.innerHTML = `<span class="sw" style="background:${sc.vars['--accent']}"></span><span class="sw2" style="background:${sc.boardBg}"></span><span class="tn">${sc.name}</span>`;
     b.addEventListener('click', () => {
-      const s = STORE.loadSettings(); s.theme = key; STORE.saveSettings(s);
-      ThemeMgr.apply(key); syncSettingsUI(); Haptics.tap();
+      const s = STORE.loadSettings(); s.scheme = key; STORE.saveSettings(s);
+      ThemeMgr.applyScheme(key); syncSettingsUI(); Haptics.tap();
     });
     wrap.appendChild(b);
   });
 })();
+
+// 배경 주제 버튼
+(function buildSubjectButtons() {
+  const wrap = el('subjectGrid'); if (!wrap) return;
+  Object.entries(SUBJECTS).forEach(([key, sj]) => {
+    const b = document.createElement('button');
+    b.className = 'theme-btn'; b.dataset.subject = key; b.type = 'button';
+    b.innerHTML = `<span class="ic">${sj.icon}</span><span class="tn">${sj.name}</span>`;
+    b.addEventListener('click', () => {
+      if (key === 'custom') { el('customImgInput').click(); return; }
+      const s = STORE.loadSettings(); s.subject = key; STORE.saveSettings(s);
+      ThemeMgr.applySubject(key); syncSettingsUI(); Haptics.tap();
+    });
+    wrap.appendChild(b);
+  });
+})();
+
+// Custom 이미지 업로드 → 리사이즈 후 data URL로 저장(용량 절감)
+el('customImgInput').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      // 긴 변 기준 1080px로 축소해 localStorage 용량 절감
+      const maxSide = 1080; let w = img.width, h = img.height;
+      if (Math.max(w, h) > maxSide) { const r = maxSide / Math.max(w, h); w = Math.round(w * r); h = Math.round(h * r); }
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      let dataUrl; try { dataUrl = cv.toDataURL('image/jpeg', 0.82); } catch { dataUrl = reader.result; }
+      const ok = STORE.saveCustomImg(dataUrl);
+      if (!ok) { alert('이미지가 너무 커서 저장하지 못했어요. 더 작은 이미지를 선택해 주세요.'); return; }
+      const s = STORE.loadSettings(); s.subject = 'custom'; STORE.saveSettings(s);
+      ThemeMgr.applySubject('custom', dataUrl); syncSettingsUI(); Haptics.tap();
+    };
+    img.onerror = () => alert('이미지를 불러오지 못했어요.');
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
 
 /* ===== PWA 설치 프롬프트 ===== */
 let deferredPrompt = null;
@@ -628,12 +725,15 @@ window.addEventListener('resize', () => { if (el('game').classList.contains('act
 (function init() {
   const s = STORE.loadSettings();
   Sound.settings = s;
-  ThemeMgr.apply(s.theme);
+  ThemeMgr.customImg = STORE.loadCustomImg();
+  ThemeMgr.dim = s.bgDim;
+  ThemeMgr.applyScheme(s.scheme);
+  ThemeMgr.applySubject(s.subject, ThemeMgr.customImg);
   el('soundBtn').textContent = s.sound ? '🔊' : '🔇';
   el('touchpad').classList.toggle('hidden', !s.showTouch);
-  // 버전 라벨(선택): 전역에서 노출되면 반영
+  const vl = el('verLabel'); if (vl) vl.textContent = 'v' + VERSION;
   showScreen('menu');
 })();
 
 /* 테스트 훅: 로직 모듈을 전역에 노출 (headless 검증용) */
-window.__TETRIS__ = { Board, Piece, SevenBag, Scorer, Game, cellsFor, tryRotate, canMove, lineScore, levelForLines, gravityIntervalMs, COLS, ROWS, TYPES, THEMES };
+window.__TETRIS__ = { Board, Piece, SevenBag, Scorer, Game, cellsFor, tryRotate, canMove, lineScore, levelForLines, gravityIntervalMs, COLS, ROWS, TYPES, VERSION, SCHEMES, SUBJECTS };

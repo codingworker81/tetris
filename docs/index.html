@@ -19,7 +19,7 @@
   <!-- 메인 메뉴 -->
   <section id="menu" class="screen active">
     <h1 class="logo">TETRIS</h1>
-    <p class="ver" id="verLabel">v1.0.0</p>
+    <p class="ver" id="verLabel">v1.1.0</p>
     <div class="menu-btns">
       <button class="mbtn primary" data-action="start">시작</button>
       <button class="mbtn" data-action="ranking">랭킹</button>
@@ -31,6 +31,7 @@
 
   <!-- 게임 화면 -->
   <section id="game" class="screen">
+    <div id="bgLayer" class="bg-layer"></div>
     <div class="game-wrap">
       <div class="side left">
         <div class="panel">
@@ -137,8 +138,18 @@
       <button id="setTouch" class="toggle" data-on="true">켜짐</button>
     </div>
     <div class="setting-block">
-      <label>배경 테마</label>
-      <div id="themeGrid" class="theme-grid"></div>
+      <label>화면 색상</label>
+      <div id="schemeGrid" class="theme-grid scheme-grid"></div>
+    </div>
+    <div class="setting-block">
+      <label>배경 주제</label>
+      <div id="subjectGrid" class="theme-grid subject-grid"></div>
+      <input id="customImgInput" type="file" accept="image/*" class="hidden" />
+      <div class="setting-sub">
+        <label>배경 밝기(어둡게)</label>
+        <input id="setBgDim" type="range" min="0" max="85" value="55" />
+        <span id="bgDimLabel">55%</span>
+      </div>
     </div>
     <p class="hint">스와이프: 보드를 좌우로 밀면 이동, 아래로 쓸면 내려가기, 빠르게 아래로 튕기면 하드드롭, 짧게 탭하면 회전.<br>키보드: ← → 이동, ↓ 소프트드롭, Space 하드드롭, ↑/X 시계회전, Z 반시계, C 홀드, P 일시정지</p>
     </div>

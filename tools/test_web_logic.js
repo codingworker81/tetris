@@ -16,12 +16,12 @@ function fakeEl() {
     set() { return true; },
   });
 }
-const noopEl = { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, addEventListener() {}, getContext() { return fakeEl(); }, textContent: '', value: '', style: {}, width: 0, height: 0, clientHeight: 480, innerHTML: '', appendChild() {}, setAttribute() {}, getAttribute() { return ''; } };
+const noopEl = { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, addEventListener() {}, getContext() { return fakeEl(); }, textContent: '', value: '', height: 0, width: 0, clientHeight: 480, clientWidth: 360, offsetWidth: 80, innerHTML: '', appendChild() {}, setAttribute() {}, getAttribute() { return ''; }, click() {}, style: { setProperty() {} }, files: [] };
 const documentShim = {
   getElementById: () => noopEl,
-  querySelector: () => ({ clientHeight: 480, setAttribute() {}, getAttribute() { return ''; } }),
+  querySelector: () => ({ clientHeight: 480, clientWidth: 360, offsetWidth: 80, setAttribute() {}, getAttribute() { return ''; }, style: { setProperty() {} } }),
   querySelectorAll: () => [],
-  createElement: () => Object.assign({}, noopEl, { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, style: {}, addEventListener() {}, appendChild() {} }),
+  createElement: () => Object.assign({}, noopEl, { classList: { add() {}, remove() {}, toggle() {} }, dataset: {}, style: { setProperty() {} }, addEventListener() {}, appendChild() {}, getContext() { return fakeEl(); }, toDataURL() { return ''; } }),
   documentElement: { style: { setProperty() {} } },
   addEventListener() {}, body: { addEventListener() {} },
 };
@@ -39,6 +39,7 @@ const sandbox = {
   window: windowShim, document: documentShim, localStorage: localStorageShim,
   navigator: { vibrate() { return true; } },
   performance: { now: () => 0 },
+  alert() {}, FileReader: function () { this.readAsDataURL = function () {}; }, Image: function () {},
   requestAnimationFrame: () => 0, setTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, clearTimeout: () => 0,
   console,
 };
@@ -122,6 +123,12 @@ for (let r = 0; r < g3.board.totalRows; r++) for (let c = 1; c < COLS; c++) g3.b
 let guard = 0;
 while (!g3.gameOver && guard++ < 50) g3.hardDrop();
 ok('game over when spawn area blocked', g3.gameOver === true);
+
+// 10) v1.1 메타데이터: 버전·스킴(2종)·배경 주제 세트
+const { VERSION, SCHEMES, SUBJECTS } = API;
+eq('version is 1.1.0', VERSION, '1.1.0');
+eq('schemes are midnight+light only', Object.keys(SCHEMES).sort(), ['light', 'midnight']);
+ok('subjects include none/custom/city', ['none','animal','anime','flower','city','nature','custom'].every(k => k in SUBJECTS));
 
 console.log(`\n== 웹 로직 검증 결과 ==\nPASS: ${pass}  FAIL: ${fail}`);
 if (fail) { console.log('실패 항목:'); fails.forEach(f => console.log('  - ' + f)); process.exit(1); }
