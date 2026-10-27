@@ -79,10 +79,14 @@ html, body {
 .stat b { font-size: 18px; color: var(--text); }
 canvas#holdCanvas, canvas#nextCanvas { display: block; background: rgba(5,7,15,.35); border-radius: 6px; width: 100%; max-width: 72px; height: auto; }
 .icon-btn {
-  font-size: 20px; background: var(--panel); border: 1px solid var(--panel2);
-  border-radius: 10px; color: var(--text); width: 46px; height: 46px; cursor: pointer;
+  font-size: 18px;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 12px; color: var(--text); width: 42px; height: 42px; cursor: pointer;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: transform .06s ease, background .12s ease;
 }
-.icon-btn:active { transform: scale(.95); }
+.icon-btn:active { transform: scale(.95); background: var(--accent2); }
 
 /* 좁은 세로 화면(폰): 사이드 패널을 보드 위 가로 한 줄로 → 보드가 세로 공간을 꽉 채움 */
 @media (max-width: 620px) {
@@ -128,16 +132,25 @@ canvas#holdCanvas, canvas#nextCanvas { display: block; background: rgba(5,7,15,.
 }
 
 /* 터치 패드 */
-.touchpad { width: 100%; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
-.touchpad .row { display: flex; gap: 8px; }
+.touchpad { width: 100%; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; }
+.touchpad .row { display: flex; gap: 6px; }
 .tbtn {
-  flex: 1; font: inherit; font-size: 20px; font-weight: 800; padding: 16px 0;
-  background: var(--panel2); border: 1px solid var(--grid); border-radius: 12px;
-  color: var(--text); cursor: pointer; min-height: 56px;
+  flex: 1; font: inherit; font-size: 15px; font-weight: 700; padding: 9px 0;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 14px; color: var(--text); cursor: pointer; min-height: 42px;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: transform .06s ease, background .12s ease;
 }
-.tbtn:active { background: var(--accent2); }
-.tbtn.wide { flex: 2; font-size: 16px; }
-.tbtn.drop { background: var(--accent2); border-color: var(--accent); }
+.tbtn:active { background: var(--accent2); transform: scale(.96); }
+.tbtn.wide { flex: 1.6; }
+.tbtn.drop {
+  background: color-mix(in srgb, var(--accent) 85%, transparent);
+  border-color: var(--accent); color: #fff; font-weight: 800;
+}
+.tbtn.drop:active { background: var(--accent); }
+.touchpad .row:first-child .tbtn { font-size: 19px; }
 
 /* 오버레이(일시정지·게임오버) */
 .overlay {
