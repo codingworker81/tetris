@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.14';
+const VERSION = '1.1.16';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -396,9 +396,12 @@ const nextCanvas = document.getElementById('nextCanvas'), nctx = nextCanvas.getC
 let CELL = 24;
 
 function resizeBoard() {
-  // 새 레이아웃: #game = [상단바][보드무대 flex:1][터치패드]. 보드는 .board-stage의 실측 공간에 맞춤.
+  // 새 레이아웃: #game = [상단바][보드무대][터치패드].
+  // ★ 보드 크기는 '창 크기 − 상단바 − 터치패드'로 계산한다. (.board-stage.clientHeight 실측은
+  //    보드 canvas 크기와 상호의존해 악순환/과도기 오측정을 일으킨다 — 지난 교훈 재적용)
   const stage = document.querySelector('.board-stage');
   if (!stage) return;
+  const topbar = document.querySelector('.topbar');
   const touchpad = document.getElementById('touchpad');
   const narrow = window.innerWidth <= 620;
 
@@ -406,26 +409,25 @@ function resizeBoard() {
   if (touchpad) touchpad.style.display = narrow ? '' : 'none';
   document.querySelectorAll('.edge-zone').forEach(z => { z.style.display = narrow ? '' : 'none'; });
 
-  // board-stage의 실제 가용 크기(= flex가 상단바/터치패드를 배치하고 남긴 공간).
-  // 측정이 0이면(최초 전환 등) 창 크기 기반 추정으로 폴백.
-  let availW = stage.clientWidth - 8;
-  let availH = stage.clientHeight - 8;
-  if (availW < 40 || availH < 40) {
-    availW = window.innerWidth - 16;
-    availH = window.innerHeight - (narrow ? 260 : 120);
-  }
+  // 상단바/터치패드는 보드 canvas를 포함하지 않으므로 offsetHeight 측정이 안정적(상호의존 없음).
+  const topH = topbar ? topbar.offsetHeight : 0;
+  const padH = (narrow && touchpad) ? touchpad.offsetHeight : 0;
+  // 폭: 넓은 화면은 중앙 고정폭(720) 한도, 세로 폰은 창 폭 그대로.
+  const frameW = narrow ? window.innerWidth : Math.min(window.innerWidth, 720);
+  const availW = frameW - 24;                                   // 좌우 여백
+  const availH = window.innerHeight - topH - padH - 20;         // 상단바+터치패드 제외한 세로
   const cellByH = Math.floor(availH / ROWS);
   const cellByW = Math.floor(availW / COLS);
-  CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 보드가 항상 무대 안
+  CELL = Math.max(12, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 보드가 항상 화면 안
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
 
   // HOLD/NEXT 캔버스 크기 확정(상단 바에 세로 배치)
   if (narrow) {
-    const nw = Math.max(54, Math.min(84, Math.floor(window.innerWidth / 6)));
-    nextCanvas.width = nw; nextCanvas.height = Math.floor(nw * 2.2);
-    nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = Math.floor(nw * 2.2) + 'px';
-    const hw = Math.floor(nw * 0.7);
+    const nw = Math.max(48, Math.min(72, Math.floor(window.innerWidth / 7)));
+    nextCanvas.width = nw; nextCanvas.height = Math.floor(nw * 1.9);
+    nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = Math.floor(nw * 1.9) + 'px';
+    const hw = Math.floor(nw * 0.64);
     holdCanvas.width = hw; holdCanvas.height = hw;
     holdCanvas.style.width = hw + 'px'; holdCanvas.style.height = hw + 'px';
   } else {

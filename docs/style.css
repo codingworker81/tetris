@@ -164,8 +164,15 @@ canvas#holdCanvas, canvas#nextCanvas {
 /* 넓은 화면(PC·태블릿): 하단 터치패드·가장자리존 숨김 → 키보드 조작 */
 @media (min-width: 621px) {
   .touchpad, .edge-zone { display: none; }
+  /* 게임 영역을 중앙 고정폭으로 제한 → 상단바 NEXT/HOLD가 화면 밖으로 잘리지 않음 */
+  #game.active { justify-content: center; }
+  .topbar, .board-stage {
+    width: min(100%, 720px); margin-left: auto; margin-right: auto;
+  }
   .game-logo { font-size: 26px; }
   .hud-stat b { font-size: 26px; }
+  /* NEXT/HOLD 캔버스는 JS가 설정한 고정 픽셀 크기를 그대로(늘어남 방지) */
+  canvas#nextCanvas, canvas#holdCanvas { width: auto !important; max-width: none; }
 }
 
 /* 오버레이(일시정지·게임오버) */
