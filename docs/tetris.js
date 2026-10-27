@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.9';
+const VERSION = '1.1.11';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -322,16 +322,36 @@ const SCHEMES = {
   light:    { name: '라이트', vars: { '--bg':'#eef1f7','--panel':'#ffffff','--panel2':'#dfe4ee','--grid':'#c3cad8','--text':'#1a2036','--muted':'#5a6480','--accent':'#3a66d6','--accent2':'#5b8cff','--danger':'#d63a4e','--ok':'#1a9e74' }, boardBg:'#f7f9fc', gridLine:'#d5dce8' },
 };
 
-// 배경 주제 — CSS 그라데이션/패턴으로 구현(외부 이미지 없이, 오프라인 PWA 유지).
+// 배경 주제 — 알아볼 수 있는 SVG 장면을 data URI로 내장(외부 이미지 없이 오프라인·저작권 문제 없음).
 // icon: 미리보기 이모지, css: #bgLayer에 적용할 background 값. custom은 사용자 업로드 이미지.
+function svgBg(svg) { return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`; }
+const W = 800, H = 1200; // 세로 기준 캔버스
 const SUBJECTS = {
-  none:   { name: '없음',       icon: '🚫', css: 'transparent' },
-  animal: { name: '동물',       icon: '🐾', css: 'radial-gradient(circle at 20% 30%, rgba(255,183,94,.35), transparent 40%), radial-gradient(circle at 80% 70%, rgba(120,200,120,.3), transparent 45%), linear-gradient(160deg,#2b1d10,#13240f)' },
-  anime:  { name: '애니메이션', icon: '✨', css: 'radial-gradient(circle at 30% 20%, rgba(255,120,200,.45), transparent 42%), radial-gradient(circle at 75% 60%, rgba(120,170,255,.4), transparent 45%), linear-gradient(140deg,#2a0f3a,#0f1740)' },
-  flower: { name: '꽃',         icon: '🌸', css: 'radial-gradient(circle at 25% 25%, rgba(255,150,190,.5), transparent 38%), radial-gradient(circle at 70% 35%, rgba(255,210,120,.4), transparent 36%), radial-gradient(circle at 55% 80%, rgba(180,120,255,.4), transparent 40%), linear-gradient(160deg,#30182a,#17210f)' },
-  city:   { name: '도시',       icon: '🌆', css: 'linear-gradient(180deg,#1a1033 0%,#3a2a66 45%,#ff7a4d 72%,#ffb37a 100%)' },
-  nature: { name: '자연',       icon: '🏞️', css: 'linear-gradient(180deg,#8fd3ff 0%,#bfe8c8 45%,#5ba85f 72%,#2f6b35 100%)' },
-  custom: { name: 'Custom',     icon: '🖼️', css: null }, // 사용자 이미지(data URL)
+  none:   { name: '없음', icon: '🚫', css: 'transparent' },
+  animal: { name: '동물', icon: '🐾', css: svgBg(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#2b1d10'/><stop offset='1' stop-color='#13240f'/></linearGradient></defs><rect width='${W}' height='${H}' fill='url(#g)'/>`+
+    [[0.2,0.25],[0.75,0.4],[0.35,0.65],[0.8,0.8],[0.15,0.85]].map(([x,y])=>{const cx=x*W,cy=y*H,s=60;return `<g fill='#ffd089' opacity='0.5'><circle cx='${cx}' cy='${cy}' r='${s*0.5}'/><circle cx='${cx-s*0.5}' cy='${cy-s*0.55}' r='${s*0.22}'/><circle cx='${cx+s*0.5}' cy='${cy-s*0.55}' r='${s*0.22}'/><circle cx='${cx-s*0.28}' cy='${cy-s*0.75}' r='${s*0.16}'/><circle cx='${cx+s*0.28}' cy='${cy-s*0.75}' r='${s*0.16}'/></g>`;}).join('')+
+    `</svg>`) },
+  anime:  { name: '애니메이션', icon: '✨', css: svgBg(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#2a0f3a'/><stop offset='1' stop-color='#0f1740'/></linearGradient></defs><rect width='${W}' height='${H}' fill='url(#g)'/>`+
+    Array.from({length:40},()=>{const x=Math.random()*W,y=Math.random()*H,r=Math.random()*3+1;return `<circle cx='${x.toFixed(0)}' cy='${y.toFixed(0)}' r='${r.toFixed(1)}' fill='#fff' opacity='${(Math.random()*0.6+0.3).toFixed(2)}'/>`;}).join('')+
+    [[0.3,0.25,34],[0.7,0.55,22],[0.5,0.78,28]].map(([x,y,s])=>{const cx=x*W,cy=y*H;return `<path d='M${cx} ${cy-s} L${cx+s*0.3} ${cy-s*0.3} L${cx+s} ${cy-s*0.3} L${cx+s*0.4} ${cy+s*0.2} L${cx+s*0.6} ${cy+s} L${cx} ${cy+s*0.5} L${cx-s*0.6} ${cy+s} L${cx-s*0.4} ${cy+s*0.2} L${cx-s} ${cy-s*0.3} L${cx-s*0.3} ${cy-s*0.3} Z' fill='#ffe66a' opacity='0.85'/>`;}).join('')+
+    `</svg>`) },
+  flower: { name: '꽃', icon: '🌸', css: svgBg(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#3a1830'/><stop offset='1' stop-color='#17210f'/></linearGradient></defs><rect width='${W}' height='${H}' fill='url(#g)'/>`+
+    [[0.22,0.3,'#ff8fc0'],[0.72,0.28,'#ffd27a'],[0.5,0.55,'#c89bff'],[0.3,0.78,'#ff9fb0'],[0.78,0.72,'#9be0a0']].map(([x,y,c])=>{const cx=x*W,cy=y*H,p=46;let petals='';for(let i=0;i<6;i++){const a=i*Math.PI/3;petals+=`<ellipse cx='${(cx+Math.cos(a)*p*0.6).toFixed(0)}' cy='${(cy+Math.sin(a)*p*0.6).toFixed(0)}' rx='${(p*0.42).toFixed(0)}' ry='${(p*0.22).toFixed(0)}' fill='${c}' opacity='0.75' transform='rotate(${(a*180/Math.PI).toFixed(0)} ${(cx+Math.cos(a)*p*0.6).toFixed(0)} ${(cy+Math.sin(a)*p*0.6).toFixed(0)})'/>`;}return petals+`<circle cx='${cx}' cy='${cy}' r='${p*0.28}' fill='#ffe66a'/>`;}).join('')+
+    `</svg>`) },
+  city:   { name: '도시', icon: '🌆', css: svgBg(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'><defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#1a1033'/><stop offset='0.45' stop-color='#3a2a66'/><stop offset='0.72' stop-color='#ff7a4d'/><stop offset='1' stop-color='#ffb37a'/></linearGradient></defs><rect width='${W}' height='${H}' fill='url(#sky)'/><circle cx='${W*0.7}' cy='${H*0.3}' r='70' fill='#ffe8c0' opacity='0.9'/>`+
+    (()=>{let b='';let x=0;const base=H*0.6;while(x<W){const bw=40+Math.random()*60;const bh=120+Math.random()*(H*0.32);b+=`<rect x='${x.toFixed(0)}' y='${(H-bh).toFixed(0)}' width='${bw.toFixed(0)}' height='${bh.toFixed(0)}' fill='#1a1230'/>`;for(let wy=H-bh+16;wy<H-10;wy+=26){for(let wx=x+8;wx<x+bw-10;wx+=20){if(Math.random()>0.45)b+=`<rect x='${wx.toFixed(0)}' y='${wy.toFixed(0)}' width='8' height='12' fill='#ffd36a' opacity='0.8'/>`;}}x+=bw+6;}return b;})()+
+    `</svg>`) },
+  nature: { name: '자연', icon: '🏞️', css: svgBg(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'><defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#8fd3ff'/><stop offset='0.5' stop-color='#bfe8c8'/><stop offset='1' stop-color='#2f6b35'/></linearGradient></defs><rect width='${W}' height='${H}' fill='url(#sky)'/><circle cx='${W*0.25}' cy='${H*0.18}' r='56' fill='#fff6c0'/>`+
+    `<path d='M0 ${H*0.62} L${W*0.25} ${H*0.4} L${W*0.42} ${H*0.6} L${W*0.62} ${H*0.33} L${W*0.82} ${H*0.58} L${W} ${H*0.45} L${W} ${H} L0 ${H} Z' fill='#5ba85f'/>`+
+    `<path d='M0 ${H*0.72} L${W*0.3} ${H*0.52} L${W*0.55} ${H*0.74} L${W*0.78} ${H*0.5} L${W} ${H*0.68} L${W} ${H} L0 ${H} Z' fill='#3d7d42'/>`+
+    `<path d='M${W*0.55} ${H*0.33} L${W*0.62} ${H*0.4} L${W*0.69} ${H*0.33} Z' fill='#fff'/>`+
+    `</svg>`) },
+  custom: { name: 'Custom', icon: '🖼️', css: null }, // 사용자 이미지(data URL)
 };
 
 const ThemeMgr = {
@@ -384,18 +404,16 @@ function resizeBoard() {
   const touchpad = document.getElementById('touchpad');
   const stacked = window.innerWidth <= 620;
 
-  // 터치패드 표시/숨김을 JS에서 확정(CSS 캐시 의존 제거). 설정 키는 showTouch.
-  const settings = (typeof STORE !== 'undefined' && STORE.loadSettings) ? STORE.loadSettings() : {};
-  const showTouch = settings.showTouch !== false;
-  if (touchpad) touchpad.style.display = (stacked && showTouch) ? '' : 'none';
+  // 세로 폰에서는 터치가 주 조작이므로 터치패드를 항상 표시(넓은 화면은 숨김)
+  if (touchpad) touchpad.style.display = stacked ? '' : 'none';
 
   let availW, availH;
   if (stacked) {
-    // 세로 폰: 사이드가 보드 위 가로줄 + 하단 터치패드 → 보드는 그 사이 남은 세로 공간
+    // 세로 폰: 상단 정보줄(사이드) + 하단 터치패드 → 보드는 그 사이 남은 세로 공간
     const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
-    const padH = (touchpad && touchpad.style.display !== 'none') ? (touchpad.offsetHeight || 140) : 0;
+    const padH = (touchpad ? (touchpad.offsetHeight || 160) : 0);
     availW = window.innerWidth - 12;
-    availH = window.innerHeight - sideH - padH - 24; // 상단 사이드 + 하단 터치패드 확보
+    availH = window.innerHeight - sideH - padH - 28; // 상단 사이드 + 하단 터치패드 확보
   } else {
     // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 크기 기준으로 계산(보드 크기와 분리 → 악순환 방지)
     const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
@@ -468,16 +486,45 @@ function render(game) {
   // HOLD
   hctx.fillStyle = ThemeMgr.boardBg; hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
   if (game.holdType) drawMini(hctx, game.holdType, holdCanvas.width, holdCanvas.height, 0);
-  // NEXT (3개) — 세로 폰은 가로 3칸, 넓은 화면은 세로 3칸
+  // NEXT (3개) — 순서를 명확히: 첫 번째(바로 다음)를 크게+강조, 번호 표시
   nctx.fillStyle = ThemeMgr.boardBg; nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   const nq = game.nextTypes(3);
+  const accent = (SCHEMES[ThemeMgr.scheme] || SCHEMES.midnight).vars['--accent'];
   if (window.innerWidth <= 620) {
-    const cw = nextCanvas.width / 3;
-    nq.forEach((t, i) => drawMiniBox(nctx, t, i * cw, 0, cw, nextCanvas.height));
+    // 가로 배치: 첫 칸 48%, 나머지 26%씩 → 왼쪽이 "다음"임이 한눈에
+    const W0 = nextCanvas.width, H0 = nextCanvas.height;
+    const widths = [W0 * 0.48, W0 * 0.26, W0 * 0.26];
+    let x = 0;
+    nq.forEach((t, i) => {
+      const bw = widths[i];
+      if (i === 0) { nctx.strokeStyle = accent; nctx.lineWidth = 2; nctx.strokeRect(x + 2, 2, bw - 4, H0 - 4); }
+      else { nctx.strokeStyle = ThemeMgr.gridLine; nctx.lineWidth = 1; nctx.beginPath(); nctx.moveTo(x + 1, 6); nctx.lineTo(x + 1, H0 - 6); nctx.stroke(); }
+      drawMiniBox(nctx, t, x, 0, bw, H0);
+      drawNextLabel(nctx, i, x + 5, 4, accent);
+      x += bw;
+    });
   } else {
-    const ch = nextCanvas.height / 3;
-    nq.forEach((t, i) => drawMiniBox(nctx, t, 0, i * ch, nextCanvas.width, ch));
+    // 세로 배치: 맨 위가 "다음"
+    const H0 = nextCanvas.height, W0 = nextCanvas.width;
+    const heights = [H0 * 0.46, H0 * 0.27, H0 * 0.27];
+    let y = 0;
+    nq.forEach((t, i) => {
+      const bh = heights[i];
+      if (i === 0) { nctx.strokeStyle = accent; nctx.lineWidth = 2; nctx.strokeRect(2, y + 2, W0 - 4, bh - 4); }
+      else { nctx.strokeStyle = ThemeMgr.gridLine; nctx.lineWidth = 1; nctx.beginPath(); nctx.moveTo(6, y + 1); nctx.lineTo(W0 - 6, y + 1); nctx.stroke(); }
+      drawMiniBox(nctx, t, 0, y, W0, bh);
+      drawNextLabel(nctx, i, 5, y + 4, accent);
+      y += bh;
+    });
   }
+}
+
+// NEXT 칸 번호 라벨(1=바로 다음)
+function drawNextLabel(ctx, i, x, y, accent) {
+  ctx.fillStyle = i === 0 ? accent : ThemeMgr.gridLine;
+  ctx.font = 'bold 11px -apple-system, "Segoe UI", sans-serif';
+  ctx.textBaseline = 'top';
+  ctx.fillText(String(i + 1), x, y);
 }
 
 // 지정한 박스(bx,by,bw,bh) 안에 미니 조각을 중앙 정렬해 그림

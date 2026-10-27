@@ -86,21 +86,26 @@ canvas#holdCanvas, canvas#nextCanvas { display: block; background: rgba(5,7,15,.
 
 /* 좁은 세로 화면(폰): 사이드 패널을 보드 위 가로 한 줄로 → 보드가 세로 공간을 꽉 채움 */
 @media (max-width: 620px) {
+  #game.active { justify-content: flex-start; }
   .game-wrap {
     flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
-    padding: 6px 6px 0;
+    padding: 6px 6px 0; flex: 1 1 auto; min-height: 0;
   }
   .side {
     flex-direction: row; align-items: center; justify-content: center;
     gap: 8px; width: 100%; flex: 0 0 auto;
   }
-  .side.left { align-items: center; }
+  .side.left { align-items: center; order: 0; }
+  .side.right { order: 1; }          /* NEXT·버튼을 보드 '위'로 */
+  .board { order: 2; flex: 0 0 auto; }
   .side .panel { flex: 0 0 auto; padding: 6px 8px; }
   .side.left .panel-title, .side.right .panel-title { margin-bottom: 2px; }
   .stats { flex-direction: row; gap: 12px; min-width: 0; }
   .stat { font-size: 10px; }
   .stat b { font-size: 15px; }
   .side-btns { flex-direction: row; gap: 8px; }
+  /* 터치패드는 항상 화면 바닥에 고정 → 조작 버튼이 잘리지 않음 */
+  .touchpad { flex: 0 0 auto; }
 }
 
 /* 좁은 폰: 사이드 패널을 더 압축 */
