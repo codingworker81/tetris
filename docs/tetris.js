@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.0';
+const VERSION = '1.1.2';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -376,15 +376,24 @@ const nextCanvas = document.getElementById('nextCanvas'), nctx = nextCanvas.getC
 let CELL = 24;
 
 function resizeBoard() {
-  // 보드 캔버스를 사용 가능한 '가로/세로 모두'에 맞춰 셀 크기 산출 (좌우 잘림 방지)
+  // 세로/가로 레이아웃에 따라 보드 셀 크기 산출 (좌우·상하 잘림 방지, 세로 공간 최대 활용)
   const wrap = document.querySelector('.game-wrap');
   const leftSide = document.querySelector('.side.left');
   const rightSide = document.querySelector('.side.right');
-  const availH = wrap.clientHeight - 8;
-  // 좌우 패널이 가로로 공간을 차지하므로 보드가 쓸 수 있는 가로폭을 뺀다
-  const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
-  const gaps = 10 * 2 + 16; // game-wrap gap(10)*2 + padding 여유
-  const availW = wrap.clientWidth - sideW - gaps;
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+
+  let availW, availH;
+  if (portrait) {
+    // 세로: 사이드 패널이 보드 '위'에 가로로 배치됨 → 보드는 가로폭 전부, 세로는 남은 높이
+    const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
+    availW = wrap.clientWidth - 12;                 // 좌우 패딩 여유
+    availH = wrap.clientHeight - sideH - 6 * 3;      // 상단 패널 2줄 높이 + gap 여유
+  } else {
+    // 가로: 사이드 패널이 보드 '옆'에 세로로 배치됨
+    const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
+    availW = wrap.clientWidth - sideW - (10 * 2 + 16);
+    availH = wrap.clientHeight - 8;
+  }
   const cellByH = Math.floor(availH / ROWS);
   const cellByW = Math.floor(availW / COLS);
   CELL = Math.max(10, Math.min(cellByH, cellByW)); // 둘 중 작은 값 → 항상 화면 안에

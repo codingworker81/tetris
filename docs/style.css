@@ -48,7 +48,7 @@ html, body {
 .mbtn.install { background: var(--ok); border-color: var(--ok); color: #04231a; width: min(78vw,320px); margin-top: 8px; }
 
 /* 게임 레이아웃 */
-#game.active { justify-content: space-between; }
+#game.active { justify-content: flex-start; }
 #game { position: relative; }
 .bg-layer {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -62,7 +62,7 @@ html, body {
 }
 .game-wrap {
   display: flex; align-items: center; justify-content: center;
-  gap: 10px; width: 100%; padding: 8px 8px 0; flex: 1; min-height: 0;
+  gap: 10px; width: 100%; padding: 8px 8px 0; flex: 1 1 auto; min-height: 0;
   position: relative; z-index: 1;
 }
 .board {
@@ -71,6 +71,7 @@ html, body {
 }
 .side { display: flex; flex-direction: column; gap: 10px; flex-shrink: 1; min-width: 0; position: relative; z-index: 1; }
 .side.left { align-items: flex-end; }
+.side-btns { display: flex; flex-direction: column; gap: 10px; }
 .panel { background: var(--panel); border-radius: 10px; padding: 8px; }
 .panel-title { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; text-align: center; }
 .stats { display: flex; flex-direction: column; gap: 8px; min-width: 70px; }
@@ -83,13 +84,34 @@ canvas#holdCanvas, canvas#nextCanvas { display: block; background: rgba(5,7,15,.
 }
 .icon-btn:active { transform: scale(.95); }
 
+/* 세로 폰(portrait): 사이드 패널을 보드 위 가로 한 줄로 → 보드가 세로 공간을 꽉 채움 */
+@media (orientation: portrait) {
+  .game-wrap {
+    flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
+    padding: 6px 6px 0;
+  }
+  .side {
+    flex-direction: row; align-items: center; justify-content: center;
+    gap: 8px; width: 100%; flex: 0 0 auto;
+  }
+  .side.left { align-items: center; }
+  .side .panel { flex: 0 0 auto; padding: 6px 8px; }
+  /* 상단 정보 줄: HOLD·SCORE 한 줄 압축 */
+  .side.left .panel-title, .side.right .panel-title { margin-bottom: 2px; }
+  .stats { flex-direction: row; gap: 12px; min-width: 0; }
+  .stat { font-size: 10px; }
+  .stat b { font-size: 15px; }
+  canvas#holdCanvas { max-width: 44px; }
+  canvas#nextCanvas { width: auto; max-width: 48px; height: 120px; }
+  .side-btns { flex-direction: row; gap: 8px; }
+  .board { flex: 1 1 auto; min-height: 0; }
+}
+
 /* 좁은 폰: 사이드 패널을 더 압축 */
 @media (max-width: 480px) {
-  .game-wrap { gap: 6px; padding: 6px 4px 0; }
-  .stats { min-width: 56px; }
+  .stats { gap: 10px; }
   .panel { padding: 6px; }
-  canvas#holdCanvas, canvas#nextCanvas { max-width: 60px; }
-  .stat b { font-size: 16px; }
+  .stat b { font-size: 14px; }
   .panel-title { font-size: 10px; }
 }
 
