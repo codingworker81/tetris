@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.18';
+const VERSION = '1.1.19';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -365,6 +365,7 @@ const ThemeMgr = {
     // 배경 주제 덮개 색: 라이트는 흰색 계열, 미드나잇은 검정 계열 (보드만 밝아 보이는 문제 방지)
     root.setProperty('--bg-dim-rgb', sc === 'light' ? '238,241,247' : '0,0,0');
     this.boardBg = th.boardBg; this.gridLine = th.gridLine;
+    this.renderBg(); // scheme에 따라 배경 주제 밝기 재적용
     if (typeof game !== 'undefined' && game) render(game);
   },
   applySubject(name, customDataUrl) {
@@ -380,7 +381,8 @@ const ThemeMgr = {
     if (this.subject === 'custom' && this.customImg) img = `url("${this.customImg}")`;
     else if (subj.css && subj.css !== 'transparent') img = subj.css;
     if (!img) { layer.style.backgroundImage = 'none'; layer.style.opacity = '0'; return; }
-    layer.style.opacity = '1';
+    // 라이트 테마에선 배경 주제를 약하게(전체가 밝은 느낌 유지), 미드나잇은 선명하게
+    layer.style.opacity = (this.scheme === 'light') ? '0.28' : '1';
     layer.style.backgroundImage = img;
     layer.style.backgroundSize = 'cover';
     layer.style.backgroundPosition = 'center';
@@ -393,7 +395,8 @@ const ThemeMgr = {
 /* ===== 렌더 ===== */
 const boardCanvas = document.getElementById('board');
 const bctx = boardCanvas.getContext('2d');
-const holdCanvas = document.getElementById('holdCanvas'), hctx = holdCanvas.getContext('2d');
+// HOLD UI는 제거됨(로직 game.hold()는 키보드 C용으로 유지). canvas가 없으면 null.
+const holdCanvas = document.getElementById('holdCanvas'), hctx = holdCanvas ? holdCanvas.getContext('2d') : null;
 const nextCanvas = document.getElementById('nextCanvas'), nctx = nextCanvas.getContext('2d');
 let CELL = 24;
 
@@ -424,19 +427,15 @@ function resizeBoard() {
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
 
-  // HOLD/NEXT 캔버스 크기 확정(상단 바에 세로 배치)
+  // NEXT 캔버스 크기 확정(상단 바에 가로 3칸 배치). HOLD는 제거됨.
   if (narrow) {
-    const nw = Math.max(48, Math.min(72, Math.floor(window.innerWidth / 7)));
-    nextCanvas.width = nw; nextCanvas.height = Math.floor(nw * 1.9);
-    nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = Math.floor(nw * 1.9) + 'px';
-    const hw = Math.floor(nw * 0.64);
-    holdCanvas.width = hw; holdCanvas.height = hw;
-    holdCanvas.style.width = hw + 'px'; holdCanvas.style.height = hw + 'px';
+    const nw = Math.max(150, Math.min(240, Math.floor(window.innerWidth * 0.42)));
+    const nh = Math.floor(nw / 3.1);
+    nextCanvas.width = nw; nextCanvas.height = nh;
+    nextCanvas.style.width = nw + 'px'; nextCanvas.style.height = nh + 'px';
   } else {
-    nextCanvas.width = 84; nextCanvas.height = 184;
-    nextCanvas.style.width = '84px'; nextCanvas.style.height = '184px';
-    holdCanvas.width = 64; holdCanvas.height = 64;
-    holdCanvas.style.width = '64px'; holdCanvas.style.height = '64px';
+    nextCanvas.width = 210; nextCanvas.height = 66;
+    nextCanvas.style.width = '210px'; nextCanvas.style.height = '66px';
   }
 }
 
@@ -497,24 +496,23 @@ function render(game) {
     }
   }
   // HOLD
-  hctx.fillStyle = ThemeMgr.boardBg; hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
-  if (game.holdType) drawMini(hctx, game.holdType, holdCanvas.width, holdCanvas.height, 0);
-  // NEXT (3개) — 순서를 명확히: 첫 번째(바로 다음)를 크게+강조, 번호 표시
+  // HOLD UI 제거됨 — 렌더 없음 (hctx가 있으면 레거시 호환상 비움)
+  if (hctx && holdCanvas) { hctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height); }
+  // NEXT (3개) 가로 배치 — 맨 왼쪽(1번)이 바로 다음: 크게+강조, 나머지 작게+번호
   nctx.fillStyle = ThemeMgr.boardBg; nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   const nq = game.nextTypes(3);
   const accent = (SCHEMES[ThemeMgr.scheme] || SCHEMES.midnight).vars['--accent'];
   {
-    // 세로 배치: 맨 위가 "다음"(1번) — 크게+강조, 나머지는 작게+번호
-    const H0 = nextCanvas.height, W0 = nextCanvas.width;
-    const heights = [H0 * 0.46, H0 * 0.27, H0 * 0.27];
-    let y = 0;
+    const W0 = nextCanvas.width, H0 = nextCanvas.height;
+    const widths = [W0 * 0.46, W0 * 0.27, W0 * 0.27];
+    let x = 0;
     nq.forEach((t, i) => {
-      const bh = heights[i];
-      if (i === 0) { nctx.strokeStyle = accent; nctx.lineWidth = 2; nctx.strokeRect(2, y + 2, W0 - 4, bh - 4); }
-      else { nctx.strokeStyle = ThemeMgr.gridLine; nctx.lineWidth = 1; nctx.beginPath(); nctx.moveTo(6, y + 1); nctx.lineTo(W0 - 6, y + 1); nctx.stroke(); }
-      drawMiniBox(nctx, t, 0, y, W0, bh);
-      drawNextLabel(nctx, i, 5, y + 4, accent);
-      y += bh;
+      const bw = widths[i];
+      if (i === 0) { nctx.strokeStyle = accent; nctx.lineWidth = 2; nctx.strokeRect(x + 2, 2, bw - 4, H0 - 4); }
+      else { nctx.strokeStyle = ThemeMgr.gridLine; nctx.lineWidth = 1; nctx.beginPath(); nctx.moveTo(x + 1, 6); nctx.lineTo(x + 1, H0 - 6); nctx.stroke(); }
+      drawMiniBox(nctx, t, x, 0, bw, H0);
+      drawNextLabel(nctx, i, x + 5, 4, accent);
+      x += bw;
     });
   }
 }

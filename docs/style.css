@@ -64,29 +64,28 @@ html, body {
 /* 상단 바: 좌 스탯 / 중앙 로고·아이콘 / 우 NEXT·HOLD */
 .topbar {
   position: relative; z-index: 1; width: 100%;
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 8px; padding: 6px 10px 2px; flex: 0 0 auto;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 4px 12px 2px; flex: 0 0 auto;
 }
-.hud-left { display: flex; flex-direction: column; gap: 6px; min-width: 64px; }
-.hud-stat { display: flex; flex-direction: column; line-height: 1.05; }
-.hud-stat span { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
+.topbar-head { display: flex; align-items: center; justify-content: center; gap: 10px; position: relative; }
+.topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hud-left { display: flex; flex-direction: row; gap: 16px; }
+.hud-stat { display: flex; flex-direction: column; line-height: 1.0; }
+.hud-stat span { font-size: 9px; letter-spacing: 1px; color: var(--muted); }
 .hud-stat b {
-  font-size: 22px; font-weight: 900; color: var(--text);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+  font-size: 20px; font-weight: 900; color: var(--text);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 55%, transparent);
 }
-.hud-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .game-logo {
-  font-size: 20px; font-weight: 900; letter-spacing: 4px;
+  font-size: 19px; font-weight: 900; letter-spacing: 4px;
   background: linear-gradient(90deg,#00f0f0,#5b8cff,#b05bff);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.hud-icons { display: flex; gap: 6px; }
-.hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 64px; }
-.hud-cap { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
-.hud-cap.hold-cap { margin-top: 4px; }
-canvas#holdCanvas, canvas#nextCanvas {
-  display: block; background: rgba(5,7,15,.35); border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+.hud-icons { display: flex; gap: 6px; position: absolute; right: 0; }
+.hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.hud-cap { font-size: 9px; letter-spacing: 1px; color: var(--muted); }
+canvas#nextCanvas {
+  display: block; background: transparent; border-radius: 6px;
 }
 
 .icon-btn {

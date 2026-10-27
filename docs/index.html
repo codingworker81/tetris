@@ -12,14 +12,14 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="style.css?v=1.1.18" />
+<link rel="stylesheet" href="style.css?v=1.1.19" />
 </head>
 <body>
 <div id="app">
   <!-- 메인 메뉴 -->
   <section id="menu" class="screen active">
     <h1 class="logo">TETRIS</h1>
-    <p class="ver" id="verLabel">v1.1.18</p>
+    <p class="ver" id="verLabel">v1.1.19</p>
     <div class="menu-btns">
       <button class="mbtn primary" data-action="start">시작</button>
       <button class="mbtn" data-action="ranking">랭킹</button>
@@ -33,30 +33,30 @@
   <section id="game" class="screen">
     <div id="bgLayer" class="bg-layer"></div>
 
-    <!-- 상단 바: 좌 스탯 / 중앙 로고 / 우 NEXT -->
+    <!-- 상단 바: (1행) 로고·아이콘  (2행) 좌 스탯 / 우 NEXT 가로 -->
     <div class="topbar">
-      <div class="hud-left">
-        <div class="hud-stat"><span>SCORE</span><b id="score">0</b></div>
-        <div class="hud-stat"><span>LEVEL</span><b id="level">1</b></div>
-        <div class="hud-stat"><span>LINES</span><b id="lines">0</b></div>
-      </div>
-      <div class="hud-mid">
+      <div class="topbar-head">
         <div class="game-logo">TETRIS</div>
         <div class="hud-icons">
           <button id="pauseBtn" class="icon-btn" title="일시정지" aria-label="일시정지">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
           </button>
           <button id="soundBtn" class="icon-btn" title="소리" aria-label="소리">
-            <svg class="ic-sound-on" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a4 4 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <svg class="ic-sound-off hidden" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg class="ic-sound-on" viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a4 4 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg class="ic-sound-off hidden" viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
         </div>
       </div>
-      <div class="hud-right">
-        <div class="hud-cap">NEXT</div>
-        <canvas id="nextCanvas" width="96" height="260"></canvas>
-        <div class="hud-cap hold-cap">HOLD</div>
-        <canvas id="holdCanvas" width="72" height="72"></canvas>
+      <div class="topbar-row">
+        <div class="hud-left">
+          <div class="hud-stat"><span>SCORE</span><b id="score">0</b></div>
+          <div class="hud-stat"><span>LEVEL</span><b id="level">1</b></div>
+          <div class="hud-stat"><span>LINES</span><b id="lines">0</b></div>
+        </div>
+        <div class="hud-right">
+          <div class="hud-cap">NEXT</div>
+          <canvas id="nextCanvas" width="180" height="56"></canvas>
+        </div>
       </div>
     </div>
 
@@ -166,7 +166,7 @@
   </section>
 </div>
 
-<script src="tetris.js?v=1.1.18"></script>
+<script src="tetris.js?v=1.1.19"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;
