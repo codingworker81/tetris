@@ -314,7 +314,7 @@ const Haptics = {
 };
 
 /* ===== 배경 테마 ===== */
-const VERSION = '1.1.6';
+const VERSION = '1.1.7';
 
 // 화면 색상(스킴) — 미드나잇/라이트 2종만
 const SCHEMES = {
@@ -378,7 +378,7 @@ let CELL = 24;
 function resizeBoard() {
   // CSS 분기(620px)와 동일 기준으로 stacked(세로 폰)/side(넓은 화면) 판단
   const wrap = document.querySelector('.game-wrap');
-  if (!wrap || wrap.clientHeight === 0) return; // 레이아웃 미확정 시 스킵(rAF 재호출)
+  if (!wrap) return;
   const leftSide = document.querySelector('.side.left');
   const rightSide = document.querySelector('.side.right');
   const touchpad = document.getElementById('touchpad');
@@ -393,12 +393,12 @@ function resizeBoard() {
     // 세로 폰: 사이드가 보드 위/아래 가로줄 → 보드는 가로폭 거의 전부, 세로는 남은 높이
     const sideH = (leftSide ? leftSide.offsetHeight : 0) + (rightSide ? rightSide.offsetHeight : 0);
     availW = window.innerWidth - 12;
-    availH = wrap.clientHeight - sideH - 18; // 사이드 2줄 + gap 여유
+    availH = window.innerHeight - sideH - 24; // 창 높이 기준(flex 측정 오차 회피)
   } else {
-    // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 폭 기준으로 계산(보드 크기와 분리 → 악순환 방지)
+    // 넓은 화면: 사이드가 보드 옆 세로 배치. 창 크기 기준으로 계산(보드 크기와 분리 → 악순환 방지)
     const sideW = (leftSide ? leftSide.offsetWidth : 0) + (rightSide ? rightSide.offsetWidth : 0);
     availW = window.innerWidth - sideW - (10 * 2 + 24);
-    availH = wrap.clientHeight - 16;
+    availH = window.innerHeight - 24; // 창 높이 기준(flex 측정 오차 회피)
   }
   const cellByH = Math.floor(availH / ROWS);
   const cellByW = Math.floor(availW / COLS);
@@ -406,7 +406,7 @@ function resizeBoard() {
   boardCanvas.width = CELL * COLS;
   boardCanvas.height = CELL * ROWS;
   const diag = document.getElementById('diag');
-  if (diag) diag.textContent = `v${VERSION} ${window.innerWidth}x${window.innerHeight} ${stacked ? 'stack' : 'side'} wrapH=${wrap.clientHeight} sideW=${(leftSide?leftSide.offsetWidth:0)+(rightSide?rightSide.offsetWidth:0)} CELL=${CELL}`;
+  if (diag) diag.textContent = `v${VERSION} ${window.innerWidth}x${window.innerHeight} ${stacked ? 'stack' : 'side'} availH=${availH} sideW=${(leftSide?leftSide.offsetWidth:0)+(rightSide?rightSide.offsetWidth:0)} CELL=${CELL}`;
 }
 
 function drawCell(ctx, x, y, color, size = CELL) {
