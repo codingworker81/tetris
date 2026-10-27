@@ -12,14 +12,14 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css?v=1.1.5" />
 </head>
 <body>
 <div id="app">
   <!-- 메인 메뉴 -->
   <section id="menu" class="screen active">
     <h1 class="logo">TETRIS</h1>
-    <p class="ver" id="verLabel">v1.1.4</p>
+    <p class="ver" id="verLabel">v1.1.5</p>
     <div class="menu-btns">
       <button class="mbtn primary" data-action="start">시작</button>
       <button class="mbtn" data-action="ranking">랭킹</button>
@@ -32,6 +32,7 @@
   <!-- 게임 화면 -->
   <section id="game" class="screen">
     <div id="bgLayer" class="bg-layer"></div>
+    <div id="diag" style="position:absolute;top:2px;right:4px;z-index:50;font:11px monospace;color:#8b93b8;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:6px;pointer-events:none;"></div>
     <div class="game-wrap">
       <div class="side left">
         <div class="panel">
@@ -159,7 +160,7 @@
   </section>
 </div>
 
-<script src="tetris.js"></script>
+<script src="tetris.js?v=1.1.5"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;
